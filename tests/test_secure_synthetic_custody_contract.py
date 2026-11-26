@@ -1,4 +1,4 @@
-"""One hundred thirty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred thirty-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -6640,5 +6640,307 @@ def test_lookup_observed_record_encoding_and_depth():
         oversized = dict(record, schema_version='x' * 100000)
         _reject(lambda: codec.encode_lookup_observed_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_lookup_observed_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent transaction-result grammar and fixtures; no production-table oracle.
+TXNR_TYPES = (
+    ('call_id', 'uuid'), ('last_event_sequence', 'sequence?'), ('lease_id', 'uuid?'),
+    ('operation_id', 'uuid?'), ('reason', 'reason?'), ('schema_version', 'literal'),
+    ('status', 'enum'), ('transaction_id', 'uuid?'),
+)
+TXNR_STATUSES = ('committed', 'refused', 'unavailable', 'uncertain')
+TXNR_REASONS = (None, 'invalid_input', 'stale_authority', 'wrong_state', 'expired',
+                'budget_exhausted', 'scope_refused', 'audit_unavailable', 'store_unavailable',
+                'commit_unknown', 'cleanup_unconfirmed')
+TXNR_COMMIT_FIELDS = ('transaction_id', 'last_event_sequence', 'operation_id', 'lease_id')
+TXNR_LEASE = '32345678-1234-4234-9234-123456789abc'
+TXNR_TRANSACTION = '42345678-1234-4234-9234-123456789abc'
+TXNR_CASES = (
+    ('committed', None, False), ('committed', None, True),
+    ('refused', 'invalid_input', False), ('refused', 'stale_authority', False),
+    ('refused', 'wrong_state', False), ('refused', 'expired', False),
+    ('refused', 'budget_exhausted', False), ('refused', 'scope_refused', False),
+    ('unavailable', 'audit_unavailable', False), ('unavailable', 'store_unavailable', False),
+    ('unavailable', 'cleanup_unconfirmed', False), ('uncertain', 'commit_unknown', False),
+)
+TXNR_GOLDEN_CASES = (
+    ('committed', None, False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":1,"lease_id":null,"oper'
+        b'ation_id":null,"reason":null,"schema_version":"s43-txn-result-v1","status":"committed","transac'
+        b'tion_id":"42345678-1234-4234-9234-123456789abc"}'
+    )),
+    ('committed', None, True, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":1,"lease_id":"32345678-'
+        b'1234-4234-9234-123456789abc","operation_id":"22345678-1234-4234-9234-123456789abc","reason":nul'
+        b'l,"schema_version":"s43-txn-result-v1","status":"committed","transaction_id":"42345678-1234-423'
+        b'4-9234-123456789abc"}'
+    )),
+    ('refused', 'invalid_input', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"invalid_input","schema_version":"s43-txn-result-v1","status":"refus'
+        b'ed","transaction_id":null}'
+    )),
+    ('refused', 'stale_authority', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"stale_authority","schema_version":"s43-txn-result-v1","status":"ref'
+        b'used","transaction_id":null}'
+    )),
+    ('refused', 'wrong_state', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"wrong_state","schema_version":"s43-txn-result-v1","status":"refused'
+        b'","transaction_id":null}'
+    )),
+    ('refused', 'expired', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"expired","schema_version":"s43-txn-result-v1","status":"refused","t'
+        b'ransaction_id":null}'
+    )),
+    ('refused', 'budget_exhausted', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"budget_exhausted","schema_version":"s43-txn-result-v1","status":"re'
+        b'fused","transaction_id":null}'
+    )),
+    ('refused', 'scope_refused', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"scope_refused","schema_version":"s43-txn-result-v1","status":"refus'
+        b'ed","transaction_id":null}'
+    )),
+    ('unavailable', 'audit_unavailable', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"audit_unavailable","schema_version":"s43-txn-result-v1","status":"u'
+        b'navailable","transaction_id":null}'
+    )),
+    ('unavailable', 'store_unavailable', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"store_unavailable","schema_version":"s43-txn-result-v1","status":"u'
+        b'navailable","transaction_id":null}'
+    )),
+    ('unavailable', 'cleanup_unconfirmed', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"cleanup_unconfirmed","schema_version":"s43-txn-result-v1","status":'
+        b'"unavailable","transaction_id":null}'
+    )),
+    ('uncertain', 'commit_unknown', False, (
+        b'{"call_id":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"o'
+        b'peration_id":null,"reason":"commit_unknown","schema_version":"s43-txn-result-v1","status":"unce'
+        b'rtain","transaction_id":null}'
+    )),
+)
+TXNR_MAXIMUM_SIZES = (('committed', None, False, 247), ('committed', None, True, 315), ('refused', 'invalid_input', False, 216), ('refused', 'stale_authority', False, 218), ('refused', 'wrong_state', False, 214), ('refused', 'expired', False, 210), ('refused', 'budget_exhausted', False, 219), ('refused', 'scope_refused', False, 216), ('unavailable', 'audit_unavailable', False, 224), ('unavailable', 'store_unavailable', False, 224), ('unavailable', 'cleanup_unconfirmed', False, 226), ('uncertain', 'commit_unknown', False, 219))
+
+
+def _txn_result(status='committed', reason=None, lease_scope=True):
+    committed = status == 'committed'
+    return dict(call_id=SUBJECT, last_event_sequence=1 if committed else None,
+        lease_id=TXNR_LEASE if committed and lease_scope else None,
+        operation_id=OTHER if committed and lease_scope else None, reason=reason,
+        schema_version='s43-txn-result-v1', status=status,
+        transaction_id=TXNR_TRANSACTION if committed else None)
+
+
+def _txn_result_accept(record):
+    before = _wire(record)
+    assert codec.encode_transaction_result(record, record['call_id']) == before
+    assert _wire(record) == before
+    result = codec.decode_transaction_result(before, record['call_id'])
+    assert type(result) is dict and result == record and result is not record
+    assert all(type(v) in (str, int, type(None)) for v in result.values())
+    return result
+
+
+def _txn_result_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_transaction_result(record, SUBJECT), code)
+    return _reject(lambda: codec.decode_transaction_result(_wire(record), SUBJECT), decode_code or code)
+
+
+def test_transaction_result_canonical_examples():
+    assert len(TXNR_TYPES) == 8 and len(TXNR_STATUSES) == 4 and len(TXNR_REASONS) == 11
+    assert tuple((s, r, lease) for s, r, lease, _ in TXNR_GOLDEN_CASES) == TXNR_CASES
+    assert len(TXNR_CASES) == 12
+    for status, reason, lease_scope, golden in TXNR_GOLDEN_CASES:
+        record = _txn_result(status, reason, lease_scope)
+        assert set(record) == {k for k, _ in TXNR_TYPES}
+        assert codec.encode_transaction_result(record, SUBJECT) == golden
+        assert codec.decode_transaction_result(golden, SUBJECT) == record
+        first, second = _txn_result_accept(record), _txn_result_accept(record)
+        first['status'] = 'changed'
+        assert second == record
+        assert codec.encode_transaction_result(dict(reversed(tuple(record.items()))), SUBJECT) == golden
+    for status, reason, lease_scope, size in TXNR_MAXIMUM_SIZES:
+        record = _txn_result(status, reason, lease_scope)
+        if status == 'committed':
+            record['last_event_sequence'] = 2147483647
+        assert len(_wire(record)) == size and size <= 1024
+        _txn_result_accept(record)
+    assert len(TXNR_MAXIMUM_SIZES) == 12
+    assert max(TXNR_MAXIMUM_SIZES, key=lambda row: row[3])[:3] == ('committed', None, True)
+    equal = _txn_result()
+    for key, typ in TXNR_TYPES:
+        if typ.startswith('uuid'):
+            equal[key] = SUBJECT
+    _txn_result_accept(equal)
+
+
+def test_transaction_result_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        __hash__ = str.__hash__
+    class IntHook(int):
+        def __le__(self, other):
+            raise AssertionError('hook reached')
+        def __ge__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _txn_result_reject(value, 'invalid_shape')
+    for value in ([{}], {'payload': _txn_result()}, {'packet': _txn_result()}):
+        _txn_result_reject(value, 'invalid_shape', 'invalid_encoding')
+    _reject(lambda: codec.encode_transaction_result(DictHook(_txn_result()), SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.encode_transaction_result(1.0, SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.decode_transaction_result(b'1.0', SUBJECT), 'invalid_value')
+    for key, typ in TXNR_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            record = _txn_result()
+            if mutation != 'extra':
+                record.pop(key)
+            if mutation != 'missing':
+                record['RAW_SENTINEL'] = None
+            _txn_result_reject(record, 'invalid_shape')
+        for bad in (None, True, False, 1.0, [], {}, 'RAW_SENTINEL', 0):
+            if bad is None and key == 'reason':
+                _txn_result_accept(dict(_txn_result(), reason=None))
+                continue
+            code = 'invalid_result' if bad is None and typ.endswith('?') else 'invalid_value'
+            _txn_result_reject(dict(_txn_result(), **{key: bad}), code,
+                               'invalid_encoding' if type(bad) in (dict, list) else code)
+        hook = IntHook(1) if typ == 'sequence?' else StringHook(SUBJECT)
+        _reject(lambda: codec.encode_transaction_result(dict(_txn_result(), **{key: hook}), SUBJECT), 'invalid_value')
+    for key in ('x' * 33, 'x' * 100000, 1, StringHook('status')):
+        record = _txn_result()
+        record.pop('status')
+        record[key] = 'committed'
+        _reject(lambda: codec.encode_transaction_result(record, SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.encode_transaction_result(dict.fromkeys(range(10000)), SUBJECT), 'invalid_shape')
+
+
+def test_transaction_result_status_and_literals():
+    cases = 0
+    for status in TXNR_STATUSES:
+        for reason in TXNR_REASONS:
+            for mask in range(16):
+                record = _txn_result(status, reason)
+                for bit, key in enumerate(TXNR_COMMIT_FIELDS):
+                    record[key] = (1 if key == 'last_event_sequence' else SUBJECT) if mask & (1 << bit) else None
+                if status == 'committed':
+                    accepted = reason is None and mask in (3, 15)
+                elif status == 'refused':
+                    accepted = mask == 0 and reason in ('invalid_input', 'stale_authority', 'wrong_state',
+                                                        'expired', 'budget_exhausted', 'scope_refused')
+                elif status == 'unavailable':
+                    accepted = mask == 0 and reason in ('audit_unavailable', 'store_unavailable', 'cleanup_unconfirmed')
+                else:
+                    accepted = mask == 0 and reason == 'commit_unknown'
+                if accepted:
+                    _txn_result_accept(record)
+                else:
+                    _txn_result_reject(record, 'invalid_result')
+                cases += 1
+    assert cases == 704
+    # Every scalar is checked before any status/reason/subject relationship.
+    for key, typ in TXNR_TYPES:
+        bad = dict(_txn_result('refused', 'commit_unknown'), transaction_id=SUBJECT)
+        bad[key] = 'RAW_SENTINEL'
+        _txn_result_reject(bad, 'invalid_value')
+    for key, literal in (('status', 'committed'), ('schema_version', 's43-txn-result-v1'),
+                         ('reason', 'commit_unknown')):
+        for bad in ('', literal.upper(), literal + '\n', literal + 'x', 'x' * 65, 'x' * 100000):
+            _reject(lambda: codec.encode_transaction_result(dict(_txn_result(), **{key: bad}), SUBJECT), 'invalid_value')
+            if len(bad) < 100000:
+                _txn_result_reject(dict(_txn_result(), **{key: bad}), 'invalid_value')
+
+
+def test_transaction_result_scalar_bounds():
+    for key, typ in TXNR_TYPES:
+        if not typ.startswith('uuid'):
+            continue
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''), SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), '0' * 36, 'x' * 65):
+            _txn_result_reject(dict(_txn_result(), **{key: bad}), 'invalid_value')
+    for value in (1, 2147483647):
+        _txn_result_accept(dict(_txn_result(), last_event_sequence=value))
+    for value in (0, -1, 2147483648, True, False, 1.0, '1'):
+        _txn_result_reject(dict(_txn_result(), last_event_sequence=value), 'invalid_value')
+    _txn_result_reject(dict(_txn_result(), last_event_sequence=None), 'invalid_result')
+    _txn_result_accept(_txn_result('uncertain', 'commit_unknown'))
+    _txn_result_accept(_txn_result(lease_scope=False))
+
+
+def test_transaction_result_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record = _txn_result()
+    _reject(lambda: codec.encode_transaction_result(record, OTHER), 'wrong_subject')
+    _reject(lambda: codec.decode_transaction_result(_wire(record), OTHER), 'wrong_subject')
+    for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+        code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+        for value in (record, None):
+            _reject(lambda: codec.encode_transaction_result(value, bad), code)
+        for value in (_wire(record), b''):
+            _reject(lambda: codec.decode_transaction_result(value, bad), code)
+    _reject(lambda: codec.decode_transaction_result(_wire(record) + b'\n', OTHER), 'invalid_encoding')
+    for bad, code in ((dict(record, status='unknown'), 'invalid_value'),
+                      (dict(record, reason='commit_unknown'), 'invalid_result'),
+                      (dict(record, lease_id=None), 'invalid_result')):
+        _reject(lambda: codec.encode_transaction_result(bad, OTHER), code)
+        _reject(lambda: codec.decode_transaction_result(_wire(bad), OTHER), code)
+
+
+def test_transaction_result_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _txn_result()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"committed"', b'"\\u0063ommitted"'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 1025, b'{"a":{}}', b'[[]]'):
+        error = _reject(lambda: codec.decode_transaction_result(frame, SUBJECT), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"call_id":null,' + wire[1:], b'{"call_\\u0069d":null,' + wire[1:]):
+        _reject(lambda: codec.decode_transaction_result(frame, SUBJECT), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity', b'-0'):
+        frame = wire.replace(b'"last_event_sequence":1', b'"last_event_sequence":' + scalar)
+        _reject(lambda: codec.decode_transaction_result(frame, SUBJECT), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_transaction_result(frame, SUBJECT), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 1025, b'{"a":{}}', b'[[]]', _wire({'payload': record})):
+            _reject(lambda: codec.decode_transaction_result(frame, SUBJECT), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_transaction_result(b' ' * 1024, SUBJECT), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_transaction_result(b'{}', SUBJECT), 'invalid_shape')
+        assert len(calls) == 2
+        _txn_result_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _txn_result_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, schema_version='x' * 100000)
+        _reject(lambda: codec.encode_transaction_result(oversized, SUBJECT), 'invalid_value')
+        _reject(lambda: codec.decode_transaction_result(_wire(oversized), SUBJECT), 'invalid_encoding')
     finally:
         json.loads = original_loads

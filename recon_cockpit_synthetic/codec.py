@@ -2017,3 +2017,85 @@ def encode_lookup_observed_record(record: dict, expected_owner_id: str,
             expected_owner_id, expected_operation_id, expected_record_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _transaction_result_scalar(value, kind):
+    if kind == 'transaction_reason?' and value is None:
+        return
+    if kind in ('transaction_status', 'transaction_reason?', 's43-txn-result-v1'):
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if kind == 'transaction_status':
+            valid = value in contract.TRANSACTION_RESULT_STATUSES
+        elif kind == 'transaction_reason?':
+            valid = value in contract.TRANSACTION_RESULT_REASONS
+        else:
+            valid = value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _transaction_result_record(value):
+    _event_closed(value, contract.TRANSACTION_RESULT_FIELDS)
+    for key, kind in contract.TRANSACTION_RESULT_SCALARS:
+        _transaction_result_scalar(value[key], kind)
+    status = value['status']
+    if value['reason'] not in contract.TRANSACTION_RESULT_STATUS_REASONS[status]:
+        raise ResultCodecError('invalid_result')
+    if status == 'committed':
+        if value['transaction_id'] is None or value['last_event_sequence'] is None:
+            raise ResultCodecError('invalid_result')
+        if (value['operation_id'] is None) != (value['lease_id'] is None):
+            raise ResultCodecError('invalid_result')
+    elif any(value[key] is not None for key in contract.TRANSACTION_RESULT_COMMIT_FIELDS):
+        raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def decode_transaction_result(frame: bytes, expected_call_id: str) -> dict:
+    """Parse intrinsic claims only; no actual transaction, commit/rollback proof,
+    broker authentication/trusted-call origin, persisted sequence/event or scope
+    resolution, provenance/freshness, physical custody/closure, completed witness
+    or operation/recovery authority is established. A receipt grants no live
+    signal, permission, mutation retry or deadline reset.
+    """
+    _expected_subject(expected_call_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.TRANSACTION_RESULT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.TRANSACTION_RESULT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _transaction_result_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if record['call_id'] != expected_call_id:
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_transaction_result(record: dict, expected_call_id: str) -> bytes:
+    """Encode intrinsic claims only; no actual transaction, commit/rollback proof,
+    broker authentication/trusted-call origin, persisted sequence/event or scope
+    resolution, provenance/freshness, physical custody/closure, completed witness
+    or operation/recovery authority is established. A receipt grants no live
+    signal, permission, mutation retry or deadline reset.
+    """
+    _expected_subject(expected_call_id)
+    validated = _transaction_result_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.TRANSACTION_RESULT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if validated['call_id'] != expected_call_id:
+        raise ResultCodecError('wrong_subject')
+    return encoded
