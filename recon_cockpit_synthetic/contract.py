@@ -501,3 +501,36 @@ RECOVERY_CHALLENGE_LITERALS = {
     'recovery_control_challenge': 'recovery_control_challenge', 'control_kind_challenge': 'recovery_challenge',
 }
 RECOVERY_CHALLENGE_ISSUER_ROLES = ('supervisor', 'broker')
+
+
+# Intrinsic response projection only; live binding completeness and authority are external.
+RECOVERY_RESPONSE_MAX_BYTES = 2048
+RECOVERY_RESPONSE_MAX_DEPTH = 3
+RECOVERY_RESPONSE_FIELDS = (
+    'clock_epoch_id', 'graph_id', 'issuer_instance_id', 'issuer_role', 'kind',
+    'observed_monotonic_ns', 'observer_session_id', 'operation_id', 'payload',
+    'phase', 'receipt_id', 'runtime_lock_sha256', 'schema_version', 'subject_owner_id',
+)
+RECOVERY_RESPONSE_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('graph_id', 'uuid4'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'role'), ('kind', 'recovery_control_response'),
+    ('observed_monotonic_ns', 'monotonic_ns'), ('observer_session_id', 'uuid4'),
+    ('operation_id', 'uuid4?'), ('phase', 'phase'), ('receipt_id', 'uuid4'),
+    ('runtime_lock_sha256', 'sha256'), ('schema_version', 's43-physical-receipt-v1'),
+    ('subject_owner_id', 'uuid4'),
+)
+RECOVERY_RESPONSE_PAYLOAD = (
+    ('activation_id', 'uuid4'), ('binding_receipt_ids', 'uuid_list3'), ('case_id', 'uuid4'), ('challenge_id', 'uuid4'),
+    ('channel_sequence', 'u64'), ('clock_epoch_id', 'uuid4'),
+    ('engagement_id', 'uuid4'), ('message_kind', 'control_kind_response'),
+    ('monitor_session_id', 'uuid4'), ('old_owner_graph_id', 'uuid4'), ('old_owner_id', 'uuid4'),
+    ('original_deadline_ns', 'monotonic_ns'),
+    ('recovery_instance_id', 'uuid4'), ('recovery_owner_id', 'uuid4'),
+    ('recovery_session_id', 'uuid4'), ('runtime_lock_sha256', 'sha256'),
+)
+RECOVERY_RESPONSE_INTEGER_BOUNDS = {'u64': (0, 18446744073709551615)}
+RECOVERY_RESPONSE_LITERALS = {
+    'recovery_control_response': 'recovery_control_response', 'control_kind_response': 'recovery_response',
+}
+RECOVERY_RESPONSE_ISSUER_ROLES = ('supervisor', 'broker')
+RECOVERY_RESPONSE_LIST_BOUNDS = (0, 3)

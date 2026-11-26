@@ -1858,3 +1858,73 @@ bring actual collection to94; local validation runs those six plus preservation.
 Formal29 portable/native89 remain unchanged; eventual portable union123 gives no
 acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
 is included.
+
+
+## Portable response control-receipt codec slice
+
+The independently reviewed slice follows verified PR123 at
+`3a9781c32b7c8ffb6897cbc010dbc5850524b4fa`. Separate
+`decode_recovery_response_receipt_record` and
+`encode_recovery_response_receipt_record` APIs validate intrinsic
+`recovery_control_response` claims. The closed14-field envelope and flattened
+closed16-field payload use canonical ASCII JSON, complete-record2048 bytes and
+depth3. Explicit expected owner/operation/graph/receipt IDs bind each record;
+returned envelope, payload and binding_receipt_ids list are fresh plain objects.
+
+The claimed issuer must be supervisor or broker after full role validation.
+message_kind is exactly recovery_response; channel sequence uses unsigned64
+range0..18446744073709551615. Observation time and original deadline use
+0..9223372036854775807. Both runtime-lock digests require lowercase SHA-256
+syntax only. All five phases and nullable physical operation remain representable,
+without inferred time ordering, ID/digest equality, freshness or phase coupling.
+
+binding_receipt_ids is an exact built-in list of0..3 canonical UUID4 strings,
+unique and sorted ASCII. Type and cardinality precede element traversal; exact
+string/UUID checks precede comparisons. No sorting, deduplication or truncation
+repairs input. An empty intrinsic claim conveys no successful-response credit.
+Actual success still requires exactly one owner binding and every allocated old
+operation binding, set size1..3, with immutable registry membership and no omission.
+
+These checks authenticate no producer/peer, register/resolve no receipt and prove
+no actual response receive, complete binding/ancestor validation, live custody or
+successful recovery eligibility. They authorize no operation. Actual response
+direction remains supervisor_recovery with receiving recovery broker, original
+live supervisor and exact endpoint/incarnation/context. The separate channel
+envelope requires null operation, zero rights, exact credentials, per-direction
+sequence and at most one response; physical role claims earn no receive credit.
+
+All binding records must have arrived and passed validation on that same
+authenticated endpoint before the response end marker. Fresh current-session
+bindings require exact old owner/operation scopes and uninterrupted supervisor/
+pidfd custody. Complete original closure/member/death/descriptor/digest backing
+records remain in the bounded read-only provenance cache with original envelopes
+and times, never imported into the live registry. Current terminal/root-copy
+checks remain mandatory; parsed list membership proves none of these predicates.
+
+Refusal uses recovery_refused instead, never partial success. Only after complete
+response validation may the broker create fresh graph_closed authority references
+for the owner and only nonclosed leases. Already-closed operations need no new
+close_lease, and supplied evidence conveys no grant. No caller-selected authority,
+imported authority ID or persisted handle becomes available. DB/journal/sync open
+and bounded store/history validation remain later gates.
+
+Old durable cut/owner closure, actual continuation before activation, validated
+activation and a fresh one-time challenge remain prerequisites. There is no
+retry/reconnect/new activation/deadline. Original session, operation/work/cleanup
+bounds, confinement, native wait sets, finite resource caps and failed-prefix
+preservation remain unchanged. No runtime action is added.
+
+The flattened projection contains selected packet fields plus message_kind and
+channel_sequence; future reconstruction removes only these two. No reconstruction
+API is added. Only actual authenticated receives produce successful projections.
+Activation-before-challenge, challenge-before-bindings, bindings-before-response,
+debit-before-send and no uncertain-delivery retry remain external. Six aggregate
+control slots remain prepared,activate,challenge,response OR refusal,and at most
+two fixed failures. No quota reset or stateful protocol is added.
+
+The six-file scope is pinned by `portable_recovery_response_codec_slice`.
+Prior94 codec units and shared helpers/imports remain unchanged. Six finite units
+bring actual collection to100; local validation runs those six plus preservation.
+Formal29 portable/native89 remain unchanged; eventual portable union129 gives no
+acceptance credit. No native execution, closed S4.2c rerun or strategic gate change
+is included.
