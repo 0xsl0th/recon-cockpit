@@ -2070,3 +2070,69 @@ bring actual collection to112; affected validation runs six plus preservation.
 Formal29 portable/native89 remain unchanged; eventual portable union141 conveys
 no acceptance credit. No native execution, closed S4.2c rerun or strategic gate
 change is included.
+
+
+## Portable progress-record codec slice
+
+The general s43-progress-v1 codec validates a closed24-field flat scalar record,
+canonical ASCII up to3072 bytes and container depth1. All four expected owner,
+operation,graph,record IDs are non-null UUID4 strings and checked before input;
+record binding follows intrinsic relations and canonical validation. Returned
+records are fresh plain dictionaries. Prior codec behavior remains unchanged.
+
+Counts are exact integers0..1 or null; bytes are0..16384 or null before narrower
+directional caps. Null means unknown, never zero. sample_sequence is1..16;
+observation time is0..9223372036854775807. UUID4/hash checks establish syntax only.
+Booleans, floats, subclasses/hooks, duplicate/missing/extra fields and noncanonical
+encoding refuse. Exact enum strings are bounded before comparisons. reason is the
+seven-value bootstrap stop_reason enum or null; stage uses only prepared,reserved,
+socket_transferred,tls_verified,released,pre_write,exchange,closed. ready/closure
+are not wire aliases. All scalar validation precedes relation errors.
+
+Only connector/connector_local, operation_worker/client_local and
+owned_service/server_local are permitted role/perspective pairs. Connector may
+know only connection_attempts. Client may know credential_reads,http_requests,
+tls_handshakes and four byte counters; connection_attempts and
+server_received_requests must be null. Server may know tls_handshakes,
+server_received_requests and four byte counters; credential_reads,
+connection_attempts,http_requests must be null. Forbidden known zero also refuses;
+permitted fields may independently remain unknown, with no inferred byte/count
+relationship, stage completion or reason coupling.
+
+Known client TLS outbound/inbound caps are8192/16384. Server local directions
+invert to16384/8192. Plaintext request/response caps remain512/2048 for both.
+Outside base scalar bounds is invalid_value; incompatible role/perspective,
+known unobservable fields and narrower-cap violations are invalid_result.
+
+This is the general3072-byte record API. Recovery-profile progress remains limited
+to1024 bytes before allocation/publication; JSONL adds one LF. Passing the codec
+alone establishes no recovery-profile eligibility. Independently frozen maximum
+complete examples are connector:918 bytes (recovery1024 fits), operation_worker:923 bytes (recovery1024 fits), owned_service:920 bytes (recovery1024 fits). No profile limit or schema is widened.
+Future profile integration must fail closed. No JSONL/file/stream/export/digest
+adapter is implemented.
+
+Parsing authenticates no producer/peer, registry membership or freshness, actual
+counter/stage truth, interval coverage, remote receipt, physical closure,
+successful witness or operation/recovery authorization. Live role/instance/graph/
+owner/session/clock/runtime and envelope operation still require authentication
+against the immutable registry. Across samples, sequence must strictly increase
+per producer and known cumulative counters cannot decrease; never sum samples or
+client/server counts. Unknown cannot establish a zero negative: those require
+positive current interval-covering observations and actual physical closure.
+Local first-write attempts/bytes never prove remote delivery.
+
+At most16 samples per producer and48 for three producers remain within the
+64-record/65536-byte member cap, at bounded milestones rather than each loop.
+Producing code maps ready to prepared and closure to closed. Phase eligibility,
+original deadlines, role ownership and bounded partial/failure reports remain
+external. Supervisor may forward records but cannot originate secret counters.
+Missing reports and crash outcomes stay unknown; failed evidence is preserved.
+Success still requires actual required progress, positive controls, matching
+authority/result records and physical closure. No recovery grant, fresh authority,
+retry/restart/deadline reset, store opening or native action follows parsing.
+
+portable_progress_codec_slice binds the exact six-file amendment. Prior112 units,
+helpers/imports and historical gates remain unchanged. Six finite units bring
+actual collection to118; affected validation is six plus preservation. Eventual
+portable union147, formal29 and native89 remain distinct. This slice grants no
+formal/native acceptance credit and runs no native or closed S4.2c checks.

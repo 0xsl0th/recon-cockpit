@@ -1,4 +1,4 @@
-"""One hundred twelve codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred eighteen codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -5776,5 +5776,330 @@ def test_recovery_fixed_failure_receipt_record_encoding_and_depth():
         oversized = dict(_recovery_fixed_failure(), schema_version='x' * 100000)
         _reject(lambda: codec.encode_recovery_fixed_failure_receipt_record(oversized, *args), 'invalid_value')
         _reject(lambda: codec.decode_recovery_fixed_failure_receipt_record(_wire(oversized), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent progress-record expectations; no production-table imports.
+PROG_TYPES = (
+    ('clock_epoch_id', 'uuid'), ('connection_attempts', 'count?'), ('credential_reads', 'count?'),
+    ('graph_id', 'uuid'), ('http_requests', 'count?'), ('issuer_instance_id', 'uuid'),
+    ('issuer_role', 'enum'), ('observed_monotonic_ns', 'integer'), ('operation_id', 'uuid'),
+    ('owner_id', 'uuid'), ('perspective', 'enum'), ('plaintext_request_bytes', 'bytes?'),
+    ('plaintext_response_bytes', 'bytes?'), ('reason', 'enum?'), ('record_id', 'uuid'),
+    ('runtime_lock_sha256', 'hash'), ('sample_sequence', 'integer'), ('schema_version', 'enum'),
+    ('server_received_requests', 'count?'), ('session_id', 'uuid'), ('stage', 'enum'),
+    ('tls_handshakes', 'count?'), ('tls_inbound_bytes', 'bytes?'), ('tls_outbound_bytes', 'bytes?'),
+)
+PROG_ROLE_PAIRS = (('connector', 'connector_local'), ('operation_worker', 'client_local'),
+                   ('owned_service', 'server_local'))
+PROG_STAGES = ('prepared', 'reserved', 'socket_transferred', 'tls_verified', 'released', 'pre_write', 'exchange', 'closed')
+PROG_REASONS = (None, 'operator_cancel', 'deadline', 'authority_lost', 'revoked',
+                'protocol_failure', 'resource_limit', 'case_complete')
+PROG_KNOWN = {
+    'connector': ('connection_attempts',),
+    'operation_worker': ('credential_reads', 'http_requests', 'tls_handshakes',
+                         'plaintext_request_bytes', 'plaintext_response_bytes', 'tls_inbound_bytes', 'tls_outbound_bytes'),
+    'owned_service': ('server_received_requests', 'tls_handshakes',
+                      'plaintext_request_bytes', 'plaintext_response_bytes', 'tls_inbound_bytes', 'tls_outbound_bytes'),
+}
+PROG_CAPS = {
+    'connector': (),
+    'operation_worker': (('tls_outbound_bytes', 8192), ('tls_inbound_bytes', 16384),
+                         ('plaintext_request_bytes', 512), ('plaintext_response_bytes', 2048)),
+    'owned_service': (('tls_outbound_bytes', 16384), ('tls_inbound_bytes', 8192),
+                      ('plaintext_request_bytes', 512), ('plaintext_response_bytes', 2048)),
+}
+
+
+def _progress(role='operation_worker'):
+    return dict(clock_epoch_id=OTHER, connection_attempts=None, credential_reads=None,
+        graph_id=CUST_GRAPH, http_requests=None, issuer_instance_id=SUBJECT, issuer_role=role,
+        observed_monotonic_ns=0, operation_id=SUBJECT, owner_id=CUST_OWNER,
+        perspective=dict(PROG_ROLE_PAIRS)[role], plaintext_request_bytes=None,
+        plaintext_response_bytes=None, reason=None, record_id=CUST_RECEIPT,
+        runtime_lock_sha256='a' * 64, sample_sequence=1, schema_version='s43-progress-v1',
+        server_received_requests=None, session_id=OTHER, stage='prepared', tls_handshakes=None,
+        tls_inbound_bytes=None, tls_outbound_bytes=None)
+
+
+PROG_CANONICAL_BYTES = (
+    b'{"clock_epoch_id":"22345678-1234-4234-9234-123456789abc","connection_attempts":null,"credential'
+    b'_reads":null,"graph_id":"72345678-1234-4234-9234-123456789abc","http_requests":null,"issuer_ins'
+    b'tance_id":"12345678-1234-4234-9234-123456789abc","issuer_role":"operation_worker","observed_mon'
+    b'otonic_ns":0,"operation_id":"12345678-1234-4234-9234-123456789abc","owner_id":"62345678-1234-42'
+    b'34-9234-123456789abc","perspective":"client_local","plaintext_request_bytes":null,"plaintext_re'
+    b'sponse_bytes":null,"reason":null,"record_id":"82345678-1234-4234-9234-123456789abc","runtime_lo'
+    b'ck_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","sample_sequence"'
+    b':1,"schema_version":"s43-progress-v1","server_received_requests":null,"session_id":"22345678-12'
+    b'34-4234-9234-123456789abc","stage":"prepared","tls_handshakes":null,"tls_inbound_bytes":null,"t'
+    b'ls_outbound_bytes":null}'
+)
+PROG_MAXIMUM_SIZES = (('connector', 918, True), ('operation_worker', 923, True), ('owned_service', 920, True))
+
+
+def _progress_maximum(role):
+    record = dict(_progress(role), observed_monotonic_ns=9223372036854775807,
+                  sample_sequence=16, stage='socket_transferred', reason='protocol_failure')
+    # Null is longer than 0/1 and 512; do not mistake all-known for maximum size.
+    for key, maximum in PROG_CAPS[role]:
+        if len(str(maximum)) >= 4:
+            record[key] = maximum
+    return record
+
+
+def _progress_args():
+    return CUST_OWNER, SUBJECT, CUST_GRAPH, CUST_RECEIPT
+
+
+def _progress_accept(record):
+    args = tuple(record[k] for k in ('owner_id', 'operation_id', 'graph_id', 'record_id'))
+    before = _wire(record)
+    assert codec.encode_progress_record(record, *args) == before
+    assert _wire(record) == before
+    result = codec.decode_progress_record(before, *args)
+    assert type(result) is dict and result == record and result is not record
+    assert all(type(v) in (str, int, type(None)) for v in result.values())
+    return result
+
+
+def _progress_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_progress_record(record, *_progress_args()), code)
+    return _reject(lambda: codec.decode_progress_record(_wire(record), *_progress_args()), decode_code or code)
+
+
+def test_progress_record_canonical_examples():
+    assert len(PROG_TYPES) == 24 and len(PROG_ROLE_PAIRS) == 3
+    assert len(PROG_STAGES) == len(PROG_REASONS) == 8
+    assert codec.encode_progress_record(_progress(), *_progress_args()) == PROG_CANONICAL_BYTES
+    assert codec.decode_progress_record(PROG_CANONICAL_BYTES, *_progress_args()) == _progress()
+    for role, perspective in PROG_ROLE_PAIRS:
+        for stage in PROG_STAGES:
+            for reason in PROG_REASONS:
+                record = dict(_progress(role), stage=stage, reason=reason)
+                assert record['perspective'] == perspective and set(record) == {k for k, _ in PROG_TYPES}
+                first, second = _progress_accept(record), _progress_accept(record)
+                first['stage'] = 'changed'
+                assert second == record
+                assert codec.encode_progress_record(dict(reversed(tuple(record.items()))), *_progress_args()) == _wire(record)
+        for key in PROG_KNOWN[role]:
+            maximum = dict(PROG_CAPS[role]).get(key, 1)
+            for value in (None, 0, maximum):
+                _progress_accept(dict(_progress(role), **{key: value}))
+        # Claims at every stage do not prove that stage or observed progress.
+        for stage in PROG_STAGES:
+            record = dict(_progress(role), stage=stage)
+            record.update({key: dict(PROG_CAPS[role]).get(key, 1) for key in PROG_KNOWN[role]})
+            _progress_accept(record)
+    equal = _progress()
+    for key, typ in PROG_TYPES:
+        if typ == 'uuid':
+            equal[key] = SUBJECT
+    _progress_accept(equal)
+    for role, size, recovery_fits in PROG_MAXIMUM_SIZES:
+        record = _progress_maximum(role)
+        assert len(_wire(record)) == size and size <= 3072
+        assert (size <= 1024) is recovery_fits
+        _progress_accept(record)
+    assert len(PROG_MAXIMUM_SIZES) == 3
+
+
+def test_progress_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class IntHook(int):
+        def __lt__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1]):
+        _progress_reject(value, 'invalid_shape')
+    _progress_reject([{}], 'invalid_shape', 'invalid_encoding')
+    _reject(lambda: codec.encode_progress_record(DictHook(_progress()), *_progress_args()), 'invalid_shape')
+    _reject(lambda: codec.encode_progress_record(1.0, *_progress_args()), 'invalid_shape')
+    _reject(lambda: codec.decode_progress_record(b'1.0', *_progress_args()), 'invalid_value')
+    for key, typ in PROG_TYPES:
+        for mutation in ('missing', 'unknown'):
+            record = _progress()
+            value = record.pop(key)
+            if mutation == 'unknown':
+                record['RAW_SENTINEL'] = value
+            _progress_reject(record, 'invalid_shape')
+        bad_values = (None, True, False, 1.0, [], {}, 'RAW_SENTINEL')
+        if typ not in ('integer', 'count?', 'bytes?'):
+            bad_values += (0, 1)
+        for bad in bad_values:
+            if bad is None and typ.endswith('?'):
+                continue
+            _progress_reject(dict(_progress(), **{key: bad}), 'invalid_value',
+                             'invalid_encoding' if type(bad) in (dict, list) else None)
+        bad = IntHook(1) if typ in ('integer', 'count?', 'bytes?') else StringHook('RAW_SENTINEL')
+        _reject(lambda: codec.encode_progress_record(dict(_progress(), **{key: bad}), *_progress_args()), 'invalid_value')
+        _reject(lambda: codec.encode_progress_record(dict(_progress(), **{key: b'RAW_SENTINEL'}), *_progress_args()), 'invalid_value')
+    for bad_key in (StringHook('x'), 'x' * 100000, 1):
+        record = _progress()
+        record[bad_key] = record.pop('clock_epoch_id')
+        _reject(lambda: codec.encode_progress_record(record, *_progress_args()), 'invalid_shape')
+    _progress_reject(dict(_progress(), RAW_SENTINEL=0), 'invalid_shape')
+    for wrapper in ('payload', 'packet'):
+        _progress_reject({wrapper: _progress()}, 'invalid_shape', 'invalid_encoding')
+    record = dict(_progress(), **{str(n): None for n in range(10000)})
+    _reject(lambda: codec.encode_progress_record(record, *_progress_args()), 'invalid_shape')
+
+
+def test_progress_record_roles_and_literals():
+    for role, expected in PROG_ROLE_PAIRS:
+        for _, perspective in PROG_ROLE_PAIRS:
+            record = dict(_progress(role), perspective=perspective)
+            if perspective == expected:
+                _progress_accept(record)
+            else:
+                _progress_reject(record, 'invalid_result')
+                _progress_reject(dict(record, stage='unknown'), 'invalid_value')
+        for key, typ in PROG_TYPES:
+            if typ not in ('count?', 'bytes?') or key in PROG_KNOWN[role]:
+                continue
+            for known in (0, 1):
+                _progress_reject(dict(_progress(role), **{key: known}), 'invalid_result')
+            _progress_reject(dict(_progress(role), **{key: 0, 'sample_sequence': 17}), 'invalid_value')
+    for role in ('driver', 'supervisor', 'broker', 'reviewer', 'fixture_source', 'release_guard',
+                 'graphical_display', 'fixture_probe', 'unknown'):
+        _progress_reject(dict(_progress(), issuer_role=role), 'invalid_value')
+    for key, values in (
+            ('issuer_role', ('operation_worker',)), ('perspective', ('client_local',)),
+            ('stage', PROG_STAGES), ('reason', PROG_REASONS[1:]),
+            ('schema_version', ('s43-progress-v1',))):
+        for value in values:
+            for bad in (value.upper(), value + '\n', value + 'x', '', 'x' * 100000):
+                _progress_reject(dict(_progress(), **{key: bad}), 'invalid_value',
+                                 'invalid_encoding' if len(bad) > 3072 else None)
+    for key, value in (('stage', 'ready'), ('stage', 'closure'), ('reason', 'unexpected_exit'),
+                       ('reason', 'bootstrap_refused'), ('schema_version', 's43-physical-receipt-v1')):
+        _progress_reject(dict(_progress(), **{key: value}), 'invalid_value')
+    class EnumHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+    for key, value in (('issuer_role', 'operation_worker'), ('perspective', 'client_local'),
+                       ('stage', 'prepared'), ('reason', 'deadline'), ('schema_version', 's43-progress-v1')):
+        _reject(lambda: codec.encode_progress_record(dict(_progress(), **{key: EnumHook(value)}), *_progress_args()), 'invalid_value')
+
+
+def test_progress_record_scalar_bounds():
+    for key, minimum, maximum in (('sample_sequence', 1, 16), ('observed_monotonic_ns', 0, 9223372036854775807)):
+        for value in (minimum, maximum):
+            _progress_accept(dict(_progress(), **{key: value}))
+        for value in (minimum - 1, maximum + 1, True, False, 1.0):
+            _progress_reject(dict(_progress(), **{key: value}), 'invalid_value')
+    for key, typ in PROG_TYPES:
+        if typ not in ('uuid', 'hash'):
+            continue
+        valid = 'f' * 64 if typ == 'hash' else SUBJECT
+        bad_values = (valid.upper(), valid + '\n', valid + 'x', 'x' + valid, valid[:-1], '')
+        if typ == 'uuid':
+            bad_values += (SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'))
+        for bad in bad_values:
+            _progress_reject(dict(_progress(), **{key: bad}), 'invalid_value')
+    for value in ('0' * 64, 'f' * 64):
+        _progress_accept(dict(_progress(), runtime_lock_sha256=value))
+    for role, _ in PROG_ROLE_PAIRS:
+        for key in PROG_KNOWN[role]:
+            if dict(PROG_TYPES)[key] == 'count?':
+                for value in (None, 0, 1):
+                    _progress_accept(dict(_progress(role), **{key: value}))
+                for value in (-1, 2, True, False, 1.0):
+                    _progress_reject(dict(_progress(role), **{key: value}), 'invalid_value')
+        for key, cap in PROG_CAPS[role]:
+            for value in (None, 0, cap):
+                _progress_accept(dict(_progress(role), **{key: value}))
+            for value in dict.fromkeys((cap + 1, 16384)):
+                record = dict(_progress(role), **{key: value})
+                if value <= cap:
+                    _progress_accept(record)
+                else:
+                    _progress_reject(record, 'invalid_value' if value > 16384 else 'invalid_result')
+            for value in (-1, 16385, True, False, 1.0):
+                _progress_reject(dict(_progress(role), **{key: value}), 'invalid_value')
+    # Server direction inverts TLS only, not named plaintext request/response.
+    _progress_accept(dict(_progress('owned_service'), tls_outbound_bytes=16384, tls_inbound_bytes=8192,
+                          plaintext_request_bytes=512, plaintext_response_bytes=2048))
+    _progress_accept(dict(_progress(), tls_outbound_bytes=8192, tls_inbound_bytes=16384,
+                          plaintext_request_bytes=512, plaintext_response_bytes=2048))
+    _progress_reject(dict(_progress(), tls_outbound_bytes=8193), 'invalid_result')
+    _progress_reject(dict(_progress('owned_service'), tls_inbound_bytes=8193), 'invalid_result')
+    for role in ('operation_worker', 'owned_service'):
+        _progress_reject(dict(_progress(role), plaintext_request_bytes=513), 'invalid_result')
+        _progress_reject(dict(_progress(role), plaintext_response_bytes=2049), 'invalid_result')
+
+
+def test_progress_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record, args = _progress(), _progress_args()
+    for index in range(4):
+        changed = list(args)
+        changed[index] = OTHER
+        _reject(lambda: codec.encode_progress_record(record, *changed), 'wrong_subject')
+        _reject(lambda: codec.decode_progress_record(_wire(record), *changed), 'wrong_subject')
+        for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+            changed = list(args)
+            changed[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            _reject(lambda: codec.encode_progress_record(record, *changed), code)
+            _reject(lambda: codec.decode_progress_record(_wire(record), *changed), code)
+            _reject(lambda: codec.encode_progress_record(None, *changed), code)
+            _reject(lambda: codec.decode_progress_record(b'', *changed), code)
+    wrong = (OTHER, SUBJECT, CUST_GRAPH, CUST_RECEIPT)
+    _reject(lambda: codec.decode_progress_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+    for bad, code in ((dict(record, stage='unknown'), 'invalid_value'),
+                      (dict(record, perspective='server_local'), 'invalid_result')):
+        _reject(lambda: codec.encode_progress_record(bad, *wrong), code)
+        _reject(lambda: codec.decode_progress_record(_wire(bad), *wrong), code)
+
+
+def test_progress_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record, args = _progress(), _progress_args()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"s43-progress-v1"', b'"\\u007343-progress-v1"'),
+                  wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":-0'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{}}', b'[[]]'):
+        error = _reject(lambda: codec.decode_progress_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"record_id":null,' + wire[1:], b'{"recor\\u0064_id":null,' + wire[1:]):
+        _reject(lambda: codec.decode_progress_record(frame, *args), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity'):
+        _reject(lambda: codec.decode_progress_record(wire.replace(b'"observed_monotonic_ns":0', b'"observed_monotonic_ns":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_progress_record(frame, *args), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{}}', b'[[]]'):
+            _reject(lambda: codec.decode_progress_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_progress_record(b' ' * 3072, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        for frame in (b'{}', b'[]'):
+            _reject(lambda: codec.decode_progress_record(frame, *args), 'invalid_shape')
+        assert len(calls) == 3
+        _progress_accept(record)
+        assert len(calls) == 4
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _progress_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, schema_version='x' * 100000)
+        _reject(lambda: codec.encode_progress_record(oversized, *args), 'invalid_value')
+        _reject(lambda: codec.decode_progress_record(_wire(oversized), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads

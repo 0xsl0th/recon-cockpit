@@ -605,3 +605,63 @@ RECOVERY_FIXED_FAILURE_ENUMS = {
                        'deadline', 'resource_limit', 'unexpected_exit', 'authority_unavailable'),
     'stage': ('bootstrap', 'ready', 'reserved', 'tls', 'released', 'exchange', 'cleanup'),
 }
+
+
+# Intrinsic progress claims only; live observations and interval proofs are external.
+PROGRESS_MAX_BYTES = 3072
+PROGRESS_MAX_DEPTH = 1
+PROGRESS_FIELDS = (
+    'clock_epoch_id', 'connection_attempts', 'credential_reads', 'graph_id',
+    'http_requests', 'issuer_instance_id', 'issuer_role', 'observed_monotonic_ns',
+    'operation_id', 'owner_id', 'perspective', 'plaintext_request_bytes',
+    'plaintext_response_bytes', 'reason', 'record_id', 'runtime_lock_sha256',
+    'sample_sequence', 'schema_version', 'server_received_requests', 'session_id',
+    'stage', 'tls_handshakes', 'tls_inbound_bytes', 'tls_outbound_bytes',
+)
+PROGRESS_SCALARS = (
+    ('clock_epoch_id', 'uuid4'), ('connection_attempts', 'count_or_unknown'),
+    ('credential_reads', 'count_or_unknown'), ('graph_id', 'uuid4'),
+    ('http_requests', 'count_or_unknown'), ('issuer_instance_id', 'uuid4'),
+    ('issuer_role', 'progress_role'), ('observed_monotonic_ns', 'monotonic_ns'),
+    ('operation_id', 'uuid4'), ('owner_id', 'uuid4'), ('perspective', 'progress_perspective'),
+    ('plaintext_request_bytes', 'bytes_or_unknown'), ('plaintext_response_bytes', 'bytes_or_unknown'),
+    ('reason', 'stop_reason_or_none'), ('record_id', 'uuid4'), ('runtime_lock_sha256', 'sha256'),
+    ('sample_sequence', 'sample_sequence'), ('schema_version', 's43-progress-v1'),
+    ('server_received_requests', 'count_or_unknown'), ('session_id', 'uuid4'),
+    ('stage', 'progress_stage'), ('tls_handshakes', 'count_or_unknown'),
+    ('tls_inbound_bytes', 'bytes_or_unknown'), ('tls_outbound_bytes', 'bytes_or_unknown'),
+)
+PROGRESS_INTEGER_BOUNDS = {
+    'count_or_unknown': (0, 1), 'bytes_or_unknown': (0, 16384), 'sample_sequence': (1, 16),
+}
+PROGRESS_NULLABLE_TYPES = ('count_or_unknown', 'bytes_or_unknown', 'stop_reason_or_none')
+PROGRESS_ENUMS = {
+    'progress_role': ('connector', 'operation_worker', 'owned_service'),
+    'progress_perspective': ('connector_local', 'client_local', 'server_local'),
+    'progress_stage': ('prepared', 'reserved', 'socket_transferred', 'tls_verified',
+                       'released', 'pre_write', 'exchange', 'closed'),
+    'stop_reason_or_none': ('operator_cancel', 'deadline', 'authority_lost', 'revoked',
+                            'protocol_failure', 'resource_limit', 'case_complete'),
+}
+PROGRESS_ROLE_PERSPECTIVES = {
+    'connector': 'connector_local', 'operation_worker': 'client_local', 'owned_service': 'server_local',
+}
+PROGRESS_COUNTER_FIELDS = (
+    'connection_attempts', 'credential_reads', 'http_requests', 'server_received_requests',
+    'tls_handshakes', 'plaintext_request_bytes', 'plaintext_response_bytes',
+    'tls_inbound_bytes', 'tls_outbound_bytes',
+)
+PROGRESS_KNOWN_FIELDS = {
+    'connector_local': ('connection_attempts',),
+    'client_local': ('credential_reads', 'http_requests', 'tls_handshakes',
+                     'plaintext_request_bytes', 'plaintext_response_bytes', 'tls_inbound_bytes', 'tls_outbound_bytes'),
+    'server_local': ('server_received_requests', 'tls_handshakes',
+                     'plaintext_request_bytes', 'plaintext_response_bytes', 'tls_inbound_bytes', 'tls_outbound_bytes'),
+}
+PROGRESS_BYTE_CAPS = {
+    'connector_local': (),
+    'client_local': (('tls_outbound_bytes', 8192), ('tls_inbound_bytes', 16384),
+                     ('plaintext_request_bytes', 512), ('plaintext_response_bytes', 2048)),
+    'server_local': (('tls_outbound_bytes', 16384), ('tls_inbound_bytes', 8192),
+                     ('plaintext_request_bytes', 512), ('plaintext_response_bytes', 2048)),
+}

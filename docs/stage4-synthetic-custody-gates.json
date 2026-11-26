@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "3a2cca4e9cb1f766db5477f9d59dadf0e0a6141b960c09baaa62e998bf1e3189",
+  "contract_sha256": "7e80919c978375450504fae336f2882e59abc8ff2cbc5673a1d0da1b0bc798fa",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -11818,5 +11818,53 @@
     "actual_fixed_failure_receive_proved": false,
     "authenticated_bootstrap_context_proved": false,
     "failure_stage_truth_proved": false
+  },
+  "portable_progress_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_progress_record_codec_implementation",
+    "scope_sha256": "510b7c913ead71b14cab6ad847fb11af7e814c0f31cffad0bcf7d89095881b99",
+    "verified_base_merge": "caa54833988d771b9da2dca610ef24edfc554b1b",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "record_schema": "s43-progress-v1",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_roles_and_literals",
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_progress_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 112,
+    "combined_unit_node_count": 118,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 147,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "actual_progress_or_stage_proved": false,
+    "interval_coverage_proved": false,
+    "cross_sample_monotonicity_proved": false,
+    "remote_receipt_proved": false,
+    "physical_closure_proved": false,
+    "completed_witness_proved": false,
+    "recovery_profile_eligibility_proved": false,
+    "packet_or_stream_adapter_implemented": false,
+    "digest_or_export_implemented": false,
+    "validation": "Collect exact118 unit IDs; run six new progress units and affected preservation check; independent final review before publication."
   }
 }
