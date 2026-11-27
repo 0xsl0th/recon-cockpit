@@ -1,4 +1,4 @@
-"""One hundred forty-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred forty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -7399,5 +7399,443 @@ def test_transaction_witness_record_encoding_and_depth():
             _txnw_reject(dict(record, transaction_result=dict(_txn_result(), schema_version=text)), 'invalid_value')
         _reject(lambda: codec.encode_transaction_witness_record(dict(record, schema_version='x' * 100000), *args), 'invalid_value')
         _reject(lambda: codec.decode_transaction_witness_record(_wire(dict(record, schema_version='x' * 100000)), *args), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent case-context grammar and frozen inventory mappings; no production oracle.
+CCX_TYPES = (
+    ('bundle_id', 'uuid'), ('case_id', 'uuid'), ('case_status', 'enum'),
+    ('code_manifest_sha256', 'sha'), ('fixture_id', 'enum'), ('graph_manifest_sha256', 'sha'),
+    ('node_id', 'node'), ('parent_id', 'parent'), ('review_view', 'enum'),
+    ('runtime_lock_sha256', 'sha'), ('schema_version', 'literal'), ('variant_id', 'variant'),
+)
+CCX_STATUSES = ('observed', 'refused', 'failed', 'interrupted_unknown')
+CCX_FIXTURES = ('allowed', 'invalid', 'restricted')
+CCX_VIEWS = ('terminal', 'graphical')
+CCX_MAPPINGS = (('S4-A01', 'terminal', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k01[terminal]'),
+ ('S4-A02', 'degraded', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a02[degraded]'),
+ ('S4-A03',
+  'invalid_credential_401',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a03[invalid_credential_401]'),
+ ('S4-A04',
+  'restricted_credential_403',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a04[restricted_credential_403]'),
+ ('S4-A05', 'cookie', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a05[cookie]'),
+ ('S4-A05', 'redirect', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a05[redirect]'),
+ ('S4-A05', 'referral_header', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a05[referral_header]'),
+ ('S4-A05', 'second_request', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a05[second_request]'),
+ ('S4-A05', 'token_refresh', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a05[token_refresh]'),
+ ('S4-A06',
+  'certificate_name',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[certificate_name]'),
+ ('S4-A06', 'cipher_suite', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[cipher_suite]'),
+ ('S4-A06',
+  'expired_certificate',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[expired_certificate]'),
+ ('S4-A06', 'host', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[host]'),
+ ('S4-A06',
+  'numeric_endpoint',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[numeric_endpoint]'),
+ ('S4-A06', 'sni', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[sni]'),
+ ('S4-A06', 'tls_version', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[tls_version]'),
+ ('S4-A06', 'untrusted_ca', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a06[untrusted_ca]'),
+ ('S4-A07', 'body_over_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[body_over_cap]'),
+ ('S4-A07', 'chunked', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[chunked]'),
+ ('S4-A07', 'compressed', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[compressed]'),
+ ('S4-A07', 'duplicate_field', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[duplicate_field]'),
+ ('S4-A07', 'header_over_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[header_over_cap]'),
+ ('S4-A07', 'invalid_utf8', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[invalid_utf8]'),
+ ('S4-A07', 'malformed_json', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[malformed_json]'),
+ ('S4-A07', 'partial_body', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[partial_body]'),
+ ('S4-A07', 'partial_headers', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[partial_headers]'),
+ ('S4-A07', 'trailing_data', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[trailing_data]'),
+ ('S4-A07',
+  'unexpected_http_status',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[unexpected_http_status]'),
+ ('S4-A07', 'unknown_schema', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a07[unknown_schema]'),
+ ('S4-A08', 'connection_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[connection_cap]'),
+ ('S4-A08', 'operator_cancel', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[operator_cancel]'),
+ ('S4-A08',
+  'plaintext_request_cap',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[plaintext_request_cap]'),
+ ('S4-A08',
+  'plaintext_response_cap',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[plaintext_response_cap]'),
+ ('S4-A08', 'process_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[process_cap]'),
+ ('S4-A08',
+  'public_output_cap',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[public_output_cap]'),
+ ('S4-A08',
+  'revoke_after_release',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[revoke_after_release]'),
+ ('S4-A08', 'tls_receive_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[tls_receive_cap]'),
+ ('S4-A08', 'tls_send_cap', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[tls_send_cap]'),
+ ('S4-A08', 'work_deadline', 'tests/test_secure_synthetic_custody_linux.py::test_s43_a08[work_deadline]'),
+ ('S4-K01', 'graphical', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k01[graphical]'),
+ ('S4-K01', 'terminal', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k01[terminal]'),
+ ('S4-K02', 'copied_handle', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[copied_handle]'),
+ ('S4-K02',
+  'duplicate_consume',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[duplicate_consume]'),
+ ('S4-K02',
+  'environment_source',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[environment_source]'),
+ ('S4-K02', 'file_source', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[file_source]'),
+ ('S4-K02', 'foreign_action', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[foreign_action]'),
+ ('S4-K02',
+  'foreign_engagement',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[foreign_engagement]'),
+ ('S4-K02', 'foreign_service', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[foreign_service]'),
+ ('S4-K02', 'legacy_source', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k02[legacy_source]'),
+ ('S4-K03', 'clock_forward', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[clock_forward]'),
+ ('S4-K03', 'clock_rollback', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[clock_rollback]'),
+ ('S4-K03',
+  'engagement_revocation',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[engagement_revocation]'),
+ ('S4-K03', 'lease_expiry', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[lease_expiry]'),
+ ('S4-K03',
+  'lease_revocation',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[lease_revocation]'),
+ ('S4-K03',
+  'revoke_before_release',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[revoke_before_release]'),
+ ('S4-K03', 'window_expiry', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k03[window_expiry]'),
+ ('S4-K04',
+  'argv_environment',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k04[argv_environment]'),
+ ('S4-K04',
+  'both_review_views',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k04[both_review_views]'),
+ ('S4-K04',
+  'diagnostic_failure',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k04[diagnostic_failure]'),
+ ('S4-K04', 'fds_mounts', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k04[fds_mounts]'),
+ ('S4-K04', 'keylog_disabled', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k04[keylog_disabled]'),
+ ('S4-K05', 'base64_body', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[base64_body]'),
+ ('S4-K05', 'error_body', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[error_body]'),
+ ('S4-K05',
+  'json_escaped_body',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[json_escaped_body]'),
+ ('S4-K05', 'literal_body', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[literal_body]'),
+ ('S4-K05', 'unknown_field', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[unknown_field]'),
+ ('S4-K05', 'unknown_header', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k05[unknown_header]'),
+ ('S4-K06',
+  'after_release_before_write',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k06[after_release_before_write]'),
+ ('S4-K06', 'before_release', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k06[before_release]'),
+ ('S4-K06', 'during_read', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k06[during_read]'),
+ ('S4-K06', 'during_write', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k06[during_write]'),
+ ('S4-K06',
+  'lost_completion_ack',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k06[lost_completion_ack]'),
+ ('S4-K07', 'arbitrary_path', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k07[arbitrary_path]'),
+ ('S4-K07',
+  'environment_name',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k07[environment_name]'),
+ ('S4-K07',
+  'legacy_case_path',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_k07[legacy_case_path]'),
+ ('S4-K07', 'mode_switch', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k07[mode_switch]'),
+ ('S4-K07', 'unlisted_value', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k07[unlisted_value]'),
+ ('S4-P02',
+  'ambient_credentials',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_p02[ambient_credentials]'),
+ ('S4-P02', 'legacy_json', 'tests/test_secure_synthetic_custody_linux.py::test_s43_p02[legacy_json]'),
+ ('S4-P02', 'legacy_markdown', 'tests/test_secure_synthetic_custody_linux.py::test_s43_p02[legacy_markdown]'),
+ ('S43-AUTH01',
+  'distinct_actions_final_allowance',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[distinct_actions_final_allowance]'),
+ ('S43-AUTH02',
+  'broker_restart_after_reservation',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[broker_restart_after_reservation]'),
+ ('S43-AUTH03',
+  'broker_restart_after_release',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[broker_restart_after_release]'),
+ ('S43-AUTH04',
+  'broker_restart_after_completion_before_ack',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[broker_restart_after_completion_before_ack]'),
+ ('S43-AUTH05',
+  'reservation_commit_failure',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[reservation_commit_failure]'),
+ ('S43-AUTH06',
+  'release_commit_failure',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[release_commit_failure]'),
+ ('S43-AUTH07',
+  'completion_commit_failure',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[completion_commit_failure]'),
+ ('S43-AUTH08',
+  'audit_failure_before_release',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[audit_failure_before_release]'),
+ ('S43-AUTH09',
+  'audit_failure_after_release',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[audit_failure_after_release]'),
+ ('S43-AUTH10',
+  'concurrent_generation_writers',
+  'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[concurrent_generation_writers]'))
+CCX_DEFAULT = ('S4-K01', 'terminal', 'tests/test_secure_synthetic_custody_linux.py::test_s43_k01[terminal]')
+CCX_LONGEST = ('S43-AUTH04', 'broker_restart_after_completion_before_ack', 'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[broker_restart_after_completion_before_ack]')
+CCX_GOLDENS = (
+    ('observed', (
+        b'{"bundle_id":"22345678-1234-4234-9234-123456789abc","case_id":"12345678-1234-4234-9234-12345678'
+        b'9abc","case_status":"observed","code_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaa","fixture_id":"allowed","graph_manifest_sha256":"bbbbbbbbbbbbbbbbbbbbb'
+        b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","node_id":"tests/test_secure_synthetic_custody_lin'
+        b'ux.py::test_s43_k01[terminal]","parent_id":"S4-K01","review_view":"terminal","runtime_lock_sha2'
+        b'56":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","schema_version":"s43-ca'
+        b'se-context-v1","variant_id":"terminal"}'
+    )),
+    ('refused', (
+        b'{"bundle_id":"22345678-1234-4234-9234-123456789abc","case_id":"12345678-1234-4234-9234-12345678'
+        b'9abc","case_status":"refused","code_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaa","fixture_id":"allowed","graph_manifest_sha256":"bbbbbbbbbbbbbbbbbbbbbb'
+        b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","node_id":"tests/test_secure_synthetic_custody_linu'
+        b'x.py::test_s43_k01[terminal]","parent_id":"S4-K01","review_view":"terminal","runtime_lock_sha25'
+        b'6":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","schema_version":"s43-cas'
+        b'e-context-v1","variant_id":"terminal"}'
+    )),
+    ('failed', (
+        b'{"bundle_id":"22345678-1234-4234-9234-123456789abc","case_id":"12345678-1234-4234-9234-12345678'
+        b'9abc","case_status":"failed","code_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaa","fixture_id":"allowed","graph_manifest_sha256":"bbbbbbbbbbbbbbbbbbbbbbb'
+        b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","node_id":"tests/test_secure_synthetic_custody_linux'
+        b'.py::test_s43_k01[terminal]","parent_id":"S4-K01","review_view":"terminal","runtime_lock_sha256'
+        b'":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","schema_version":"s43-case'
+        b'-context-v1","variant_id":"terminal"}'
+    )),
+    ('interrupted_unknown', (
+        b'{"bundle_id":"22345678-1234-4234-9234-123456789abc","case_id":"12345678-1234-4234-9234-12345678'
+        b'9abc","case_status":"interrupted_unknown","code_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","fixture_id":"allowed","graph_manifest_sha256":"bbbbbbbbbb'
+        b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","node_id":"tests/test_secure_synthetic_'
+        b'custody_linux.py::test_s43_k01[terminal]","parent_id":"S4-K01","review_view":"terminal","runtim'
+        b'e_lock_sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","schema_versi'
+        b'on":"s43-case-context-v1","variant_id":"terminal"}'
+    )),
+)
+CCX_MAXIMUM_BYTES = (
+    b'{"bundle_id":"22345678-1234-4234-9234-123456789abc","case_id":"12345678-1234-4234-9234-12345678'
+    b'9abc","case_status":"interrupted_unknown","code_manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","fixture_id":"restricted","graph_manifest_sha256":"bbbbbbb'
+    b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","node_id":"tests/test_secure_synthet'
+    b'ic_custody_linux.py::test_s43_authority[broker_restart_after_completion_before_ack]","parent_id'
+    b'":"S43-AUTH04","review_view":"graphical","runtime_lock_sha256":"ccccccccccccccccccccccccccccccc'
+    b'ccccccccccccccccccccccccccccccccc","schema_version":"s43-case-context-v1","variant_id":"broker_'
+    b'restart_after_completion_before_ack"}'
+)
+CCX_MAXIMUM_SIZE = 702
+
+
+def _ccx_record(mapping=CCX_DEFAULT, status='observed', fixture='allowed', view='terminal'):
+    parent, variant, node = mapping
+    return dict(bundle_id=OTHER, case_id=SUBJECT, case_status=status,
+                code_manifest_sha256='a' * 64, fixture_id=fixture,
+                graph_manifest_sha256='b' * 64, node_id=node, parent_id=parent,
+                review_view=view, runtime_lock_sha256='c' * 64,
+                schema_version='s43-case-context-v1', variant_id=variant)
+
+
+def _ccx_maximum(mapping):
+    return _ccx_record(mapping, 'interrupted_unknown', 'restricted', 'graphical')
+
+
+def _ccx_accept(record):
+    before = _wire(record)
+    args = (record['case_id'], record['bundle_id'])
+    assert codec.encode_case_context_record(record, *args) == before
+    assert _wire(record) == before
+    result = codec.decode_case_context_record(before, *args)
+    assert type(result) is dict and result == record and result is not record
+    assert all(type(value) is str for value in result.values())
+    return result
+
+
+def _ccx_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_case_context_record(record, SUBJECT, OTHER), code)
+    return _reject(lambda: codec.decode_case_context_record(_wire(record), SUBJECT, OTHER), decode_code or code)
+
+
+def test_case_context_record_canonical_examples():
+    assert len(CCX_TYPES) == 12 and len(CCX_MAPPINGS) == len(set(CCX_MAPPINGS)) == 90
+    assert len({row[2] for row in CCX_MAPPINGS}) == 89
+    assert tuple(status for status, _ in CCX_GOLDENS) == CCX_STATUSES
+    for status, golden in CCX_GOLDENS:
+        record = _ccx_record(status=status)
+        assert set(record) == {key for key, _ in CCX_TYPES}
+        assert codec.encode_case_context_record(record, SUBJECT, OTHER) == golden
+        assert codec.decode_case_context_record(golden, SUBJECT, OTHER) == record
+        first, second = _ccx_accept(record), _ccx_accept(record)
+        first['case_status'] = 'changed'
+        assert second == record
+        assert codec.encode_case_context_record(dict(reversed(tuple(record.items()))), SUBJECT, OTHER) == golden
+    maximum = _ccx_maximum(CCX_LONGEST)
+    assert _wire(maximum) == CCX_MAXIMUM_BYTES
+    assert len(CCX_MAXIMUM_BYTES) == CCX_MAXIMUM_SIZE <= 3072 < 4096
+    assert max(len(_wire(_ccx_maximum(row))) for row in CCX_MAPPINGS) == CCX_MAXIMUM_SIZE
+    _ccx_accept(maximum)
+    _ccx_accept(dict(_ccx_record(), bundle_id=SUBJECT))
+    _ccx_accept(dict(_ccx_record(), graph_manifest_sha256='a' * 64, runtime_lock_sha256='a' * 64))
+
+
+def test_case_context_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        __hash__ = str.__hash__
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1], {}):
+        _ccx_reject(value, 'invalid_shape')
+    for value in ([{}], {'payload': _ccx_record()}, {'packet': _ccx_record()}):
+        _ccx_reject(value, 'invalid_shape', 'invalid_encoding')
+    for value in (DictHook(_ccx_record()), 1.0, (), b'raw'):
+        _reject(lambda: codec.encode_case_context_record(value, SUBJECT, OTHER), 'invalid_shape')
+    _reject(lambda: codec.decode_case_context_record(b'1.0', SUBJECT, OTHER), 'invalid_value')
+    for key, _ in CCX_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            record = _ccx_record()
+            if mutation != 'extra':
+                record.pop(key)
+            if mutation != 'missing':
+                record['RAW_SENTINEL'] = None
+            _ccx_reject(record, 'invalid_shape')
+        for bad in (None, True, False, 1, 1.0, [], {}, 'RAW_SENTINEL'):
+            _ccx_reject(dict(_ccx_record(), **{key: bad}), 'invalid_value',
+                        'invalid_encoding' if type(bad) in (dict, list) else 'invalid_value')
+        hook = StringHook(_ccx_record()[key])
+        _reject(lambda: codec.encode_case_context_record(dict(_ccx_record(), **{key: hook}), SUBJECT, OTHER), 'invalid_value')
+    for key in ('x' * 33, 'x' * 100000, 1, StringHook('case_status')):
+        record = _ccx_record()
+        record.pop('case_status')
+        record[key] = 'observed'
+        _reject(lambda: codec.encode_case_context_record(record, SUBJECT, OTHER), 'invalid_shape')
+    _reject(lambda: codec.encode_case_context_record(dict.fromkeys(range(10000)), SUBJECT, OTHER), 'invalid_shape')
+
+
+def test_case_context_record_enums_and_mapping():
+    count = 0
+    for mapping in CCX_MAPPINGS:
+        for status in CCX_STATUSES:
+            for fixture in CCX_FIXTURES:
+                for view in CCX_VIEWS:
+                    _ccx_accept(_ccx_record(mapping, status, fixture, view))
+                    count += 1
+    assert count == 2160
+    assert {row[0] for row in CCX_MAPPINGS if row[2] == CCX_DEFAULT[2]} == {'S4-K01', 'S4-A01'}
+    assert not {'S4-V02', 'S4-V03', 'S4-V04'} & {row[0] for row in CCX_MAPPINGS}
+    invalid = 0
+    for mapping in CCX_MAPPINGS:
+        for other in (CCX_MAPPINGS[0], CCX_MAPPINGS[-1]):
+            for column in range(3):
+                candidate = list(mapping)
+                candidate[column] = other[column]
+                candidate = tuple(candidate)
+                if candidate not in CCX_MAPPINGS:
+                    _ccx_reject(_ccx_record(candidate), 'invalid_result')
+                    invalid += 1
+    assert invalid > 300
+    mismatched = dict(_ccx_record(), parent_id='S4-A02')
+    _ccx_reject(mismatched, 'invalid_result')
+    for key, _ in CCX_TYPES:
+        _ccx_reject(dict(mismatched, **{key: 'RAW_SENTINEL'}), 'invalid_value')
+    for key, values in (('case_status', CCX_STATUSES), ('fixture_id', CCX_FIXTURES),
+                        ('review_view', CCX_VIEWS), ('schema_version', ('s43-case-context-v1',))):
+        for value in values:
+            for bad in ('', value.upper(), value + '\n', value + 'x', 'x' * 65):
+                _ccx_reject(dict(_ccx_record(), **{key: bad}), 'invalid_value')
+
+
+def test_case_context_record_scalar_bounds():
+    for key, typ in CCX_TYPES:
+        if typ == 'uuid':
+            bads = ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''),
+                    SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'),
+                    '0' * 36, 'x' * 65)
+        elif typ == 'sha':
+            bads = ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 64 + '\n', 'é' * 64)
+        elif typ in ('node', 'parent', 'variant'):
+            limit = 256 if typ == 'node' else 64
+            bads = ('', 'x' * limit, 'x' * (limit + 1), _ccx_record()[key] + '\n',
+                    _ccx_record()[key].swapcase(), 'é' * 10, '../RAW_SENTINEL')
+        else:
+            continue
+        for bad in bads:
+            _ccx_reject(dict(_ccx_record(), **{key: bad}), 'invalid_value')
+    for parent in ('S4-V02', 'S4-V03', 'S4-V04', 'S43-AUTH11'):
+        _ccx_reject(dict(_ccx_record(), parent_id=parent), 'invalid_value')
+    for node in ('tests/test_secure_synthetic_custody_contract.py::test_s43_k01',
+                 CCX_DEFAULT[2] + '[other]', 'tests/test_secure_synthetic_custody_linux.py::test_unknown'):
+        _ccx_reject(dict(_ccx_record(), node_id=node), 'invalid_value')
+
+
+def test_case_context_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record = _ccx_record()
+    for args in ((OTHER, OTHER), (SUBJECT, SUBJECT)):
+        _reject(lambda: codec.encode_case_context_record(record, *args), 'wrong_subject')
+        _reject(lambda: codec.decode_case_context_record(_wire(record), *args), 'wrong_subject')
+    for index in range(2):
+        for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+            args = [SUBJECT, OTHER]
+            args[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            for value in (record, None):
+                _reject(lambda: codec.encode_case_context_record(value, *args), code)
+            for value in (_wire(record), b''):
+                _reject(lambda: codec.decode_case_context_record(value, *args), code)
+    for args, code in (((None, ''), 'invalid_shape'), (('', None), 'invalid_value')):
+        _reject(lambda: codec.encode_case_context_record(None, *args), code)
+        _reject(lambda: codec.decode_case_context_record(b'', *args), code)
+    for bad, code in ((None, 'invalid_shape'), (dict(record, case_status='unknown'), 'invalid_value'),
+                      (dict(record, parent_id='S4-A02'), 'invalid_result')):
+        _reject(lambda: codec.encode_case_context_record(bad, OTHER, SUBJECT), code)
+        _reject(lambda: codec.decode_case_context_record(_wire(bad), OTHER, SUBJECT), code)
+    _reject(lambda: codec.decode_case_context_record(_wire(record) + b'\n', OTHER, SUBJECT), 'invalid_encoding')
+
+
+def test_case_context_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _ccx_record()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"observed"', b'"\\u006fbserved"'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{}}', b'[[]]'):
+        error = _reject(lambda: codec.decode_case_context_record(frame, SUBJECT, OTHER), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"case_id":null,' + wire[1:], b'{"case_\\u0069d":null,' + wire[1:]):
+        _reject(lambda: codec.decode_case_context_record(frame, SUBJECT, OTHER), 'invalid_shape')
+    for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity', b'-0'):
+        frame = wire.replace(b'"case_status":"observed"', b'"case_status":' + scalar)
+        _reject(lambda: codec.decode_case_context_record(frame, SUBJECT, OTHER), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_case_context_record(frame, SUBJECT, OTHER), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{}}', b'[[]]', _wire({'payload': record}), _wire(dict(record, node_id=[]))):
+            _reject(lambda: codec.decode_case_context_record(frame, SUBJECT, OTHER), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_case_context_record(b' ' * 3072, SUBJECT, OTHER), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_case_context_record(b'{}', SUBJECT, OTHER), 'invalid_shape')
+        assert len(calls) == 2
+        _ccx_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _ccx_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, node_id='x' * 100000)
+        _reject(lambda: codec.encode_case_context_record(oversized, SUBJECT, OTHER), 'invalid_value')
+        _reject(lambda: codec.decode_case_context_record(_wire(oversized), SUBJECT, OTHER), 'invalid_encoding')
     finally:
         json.loads = original_loads

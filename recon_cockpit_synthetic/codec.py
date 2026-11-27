@@ -2206,3 +2206,73 @@ def encode_transaction_witness_record(record: dict, expected_writer_id: str,
             expected_writer_id, expected_call_id, expected_record_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _case_context_scalar(value, kind):
+    if kind in ('uuid4', 'sha256'):
+        _event_scalar(value, kind)
+        return
+    maximum = 256 if kind == 'planned_node_id' else 64
+    if type(value) is not str or len(value) > maximum or not value.isascii():
+        raise ResultCodecError('invalid_value')
+    if value not in contract.CASE_CONTEXT_VALUES[kind]:
+        raise ResultCodecError('invalid_value')
+
+
+def _case_context_record(value):
+    _event_closed(value, contract.CASE_CONTEXT_FIELDS)
+    for key, kind in contract.CASE_CONTEXT_SCALARS:
+        _case_context_scalar(value[key], kind)
+    mapping = tuple(value[key] for key in ('parent_id', 'variant_id', 'node_id'))
+    if mapping not in contract.CASE_CONTEXT_NATIVE_MAPPINGS:
+        raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def decode_case_context_record(frame: bytes, expected_case_id: str,
+                               expected_bundle_id: str) -> dict:
+    """Parse intrinsic planned-case claims only; no actual native execution,
+    fixture/view/status correspondence, authenticated identity, public metadata
+    provenance/freshness, bundle membership, custody/closure or completed witness
+    is proved. Parsing grants no authority, live signal, retry or deadline reset.
+    """
+    _expected_subject(expected_case_id)
+    _expected_subject(expected_bundle_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.CASE_CONTEXT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.CASE_CONTEXT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _case_context_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if (record['case_id'], record['bundle_id']) != (expected_case_id, expected_bundle_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_case_context_record(record: dict, expected_case_id: str,
+                               expected_bundle_id: str) -> bytes:
+    """Encode intrinsic planned-case claims only; no actual native execution,
+    fixture/view/status correspondence, authenticated identity, public metadata
+    provenance/freshness, bundle membership, custody/closure or completed witness
+    is proved. Encoding grants no authority, live signal, retry or deadline reset.
+    """
+    _expected_subject(expected_case_id)
+    _expected_subject(expected_bundle_id)
+    validated = _case_context_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.CASE_CONTEXT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if (validated['case_id'], validated['bundle_id']) != (expected_case_id, expected_bundle_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

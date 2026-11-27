@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "c7b618cc4d38a05e4b7e8c5c441a22f79e4feefc46f1768796cbf0aebba7891d",
+  "contract_sha256": "4bfceb93b965663848c560934670c0f3f8c64c504c432978b3b081cff343a3b5",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -12059,5 +12059,55 @@
     "packet_or_stream_adapter_implemented": false,
     "digest_or_export_implemented": false,
     "validation": "Collect exact142 unit IDs; run six new transaction-witness units and affected preservation check; independent final review before publication."
+  },
+  "portable_case_context_codec_slice": {
+    "scope_review": "passed_for_local_intrinsic_case_context_codec_implementation",
+    "scope_sha256": "4c59468999ea38faa1d83221ecf14778ab87a8359e21b1ce5853fbc96a31097a",
+    "verified_base_merge": "0cc4a9de4cc37d31ed55ab04f9ae669548b5096c",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/contract.py",
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "record_schema": "s43-case-context-v1",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_canonical_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_shape_and_type_rejections",
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_enums_and_mapping",
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_scalar_bounds",
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_expected_subject_binding",
+      "tests/test_secure_synthetic_custody_contract.py::test_case_context_record_encoding_and_depth"
+    ],
+    "new_unit_node_count": 6,
+    "prior_codec_unit_nodes_preserved": 142,
+    "combined_unit_node_count": 148,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 177,
+    "native_nodes_unchanged": 89,
+    "acceptance_credit": false,
+    "native_execution_authorized": false,
+    "authority_predicates_implemented": false,
+    "registry_implemented": false,
+    "producer_authentication_implemented": false,
+    "actual_transaction_implemented": false,
+    "persisted_event_resolution_implemented": false,
+    "commit_or_rollback_proved": false,
+    "provenance_or_freshness_proved": false,
+    "physical_custody_or_closure_proved": false,
+    "completed_witness_proved": false,
+    "case_context_implemented": true,
+    "actual_native_execution_proved": false,
+    "live_signal_implemented": false,
+    "packet_or_stream_adapter_implemented": false,
+    "digest_or_export_implemented": false,
+    "validation": "Collect exact148 unit IDs; run six new case-context units and affected preservation check; independent final review before publication."
   }
 }
