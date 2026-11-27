@@ -2416,3 +2416,57 @@ new units plus the affected preservation check locally. The eventual portable
 union is 177 (148 codec plus 29 formal nodes); formal 29 and native 89 remain
 unchanged and no formal acceptance node is implemented here. Independent review,
 complete PR/main CI and current-main compatibility remain publication gates.
+
+
+### Reviewed portable reader-receipt codec slice
+
+This slice adds intrinsic parsing and encoding for the closed nine-field
+`s43-inspection-v1` receipt. The required expected bundle argument is either a
+canonical UUID4 or null. Null requires an exact null bundle match; it is never
+a wildcard. Validate that argument before input, then compare the declared bundle
+only after complete intrinsic and canonical checks. Caller-supplied equality
+does not authenticate a bundle or establish trusted case association.
+
+`valid` requires nonnull bundle UUID and manifest SHA256 identities and the
+literal reason `none`. `invalid` and `unavailable` require both identities null
+and a non-`none` reason. Mixed pairs and contradictory combinations are rejected.
+Every scalar is validated before these relationships. Both `python` and `cli`
+use the same table; no further status/reason classification is inferred.
+Reader code SHA256 remains nonnull; malformed UUIDs/hashes and scalar subclasses
+are refused. Declared member and record counts are exact integers in 0..9 and
+0..1530, excluding bool/float. No count or identity is synthesized from status.
+
+The complete canonical receipt cap is 3072 bytes, with depth 1. Independent
+literal goldens cover all 23 status/reason/identity patterns and both reader kinds
+are exercised. Complete maximum sizes with counts 9/1530 are:
+valid/none 355 bytes, invalid/schema 263 bytes, invalid/identity 265 bytes, invalid/ordering 265 bytes, invalid/custody 264 bytes, invalid/budget 263 bytes, invalid/unsafe_path 268 bytes, invalid/changed_member 271 bytes, invalid/oversize 265 bytes, invalid/missing_member 271 bytes, invalid/unknown_member 271 bytes, invalid/unavailable_context 276 bytes, unavailable/schema 267 bytes, unavailable/identity 269 bytes, unavailable/ordering 269 bytes, unavailable/custody 268 bytes, unavailable/budget 267 bytes, unavailable/unsafe_path 272 bytes, unavailable/changed_member 275 bytes, unavailable/oversize 269 bytes, unavailable/missing_member 275 bytes, unavailable/unknown_member 275 bytes, unavailable/unavailable_context 280 bytes.
+The receipt stays outside the immutable bundle; the eight payload members plus
+manifest, aggregate and per-member limits remain unchanged.
+
+Root shape and bounded key checks precede scalar and relationship validation.
+Duplicate and escaped-equivalent keys retain `invalid_shape`; byte/depth,
+malformed JSON and noncanonical encodings retain `invalid_encoding`.
+Floats/constants retain `invalid_value`; count `-0` parses as intrinsic zero but
+is rejected as noncanonical. Decoders reject nested wrappers before parsing at
+depth 1; encoder root/scalar shape errors remain distinct. Both APIs return or
+encode fresh validated data without changing caller input or echoing raw errors.
+
+These are declared inspection claims. Actual validated counts, zero before
+validation, complete membership, immutable original Python/CLI pairing, public
+reader-code identity and metadata provenance/freshness, owned/stable files and
+paths, 2000ms/4MiB reader limits, typed crosslinks, ordering, progress, physical
+closure and recovery/witness predicates remain mandatory external gates. Parsed
+valid claims with zero or partial counts confer no valid-bundle credit. Original
+failed receipts remain retained and replay uses copies only. A closed trusted
+harness must establish case association; rejected input data or filenames cannot
+supply it. The codec performs no bundle file reads or hashing and grants no live
+authority, signal, retry, deadline reset or acceptance credit.
+
+Exactly six existing files change: append-only constants and codec, six new
+finite units, this note, one inventory entry plus contract hash, and five literal
+preservation hashes. Prior 148 codec nodes/helpers/imports remain unchanged.
+Collect exactly 154 codec node IDs and run only the six new units plus affected
+preservation check locally. The eventual portable union is 183 (154 codec plus
+29 formal nodes); formal 29 remain unimplemented and native 89 unchanged.
+Independent source review, complete PR/main CI and current-main compatibility
+remain publication gates. No actual reader, CLI or native execution is added.

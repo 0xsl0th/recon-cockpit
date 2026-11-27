@@ -2276,3 +2276,91 @@ def encode_case_context_record(record: dict, expected_case_id: str,
     if (validated['case_id'], validated['bundle_id']) != (expected_case_id, expected_bundle_id):
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _reader_receipt_scalar(value, kind):
+    if kind in contract.READER_RECEIPT_COUNT_MAXIMA:
+        if type(value) is not int or not 0 <= value <= contract.READER_RECEIPT_COUNT_MAXIMA[kind]:
+            raise ResultCodecError('invalid_value')
+    elif kind in ('reader_kind', 'inspection_reason', 'inspection_status', 's43-inspection-v1'):
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if kind == 'reader_kind':
+            valid = value in contract.READER_RECEIPT_KINDS
+        elif kind == 'inspection_reason':
+            valid = value in contract.READER_RECEIPT_REASONS
+        elif kind == 'inspection_status':
+            valid = value in contract.READER_RECEIPT_STATUSES
+        else:
+            valid = value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _reader_receipt_record(value):
+    _event_closed(value, contract.READER_RECEIPT_FIELDS)
+    for key, kind in contract.READER_RECEIPT_SCALARS:
+        _reader_receipt_scalar(value[key], kind)
+    if value['status'] == 'valid':
+        valid = (value['bundle_id'] is not None and value['manifest_sha256'] is not None
+                 and value['reason'] == 'none')
+    else:
+        valid = (value['bundle_id'] is None and value['manifest_sha256'] is None
+                 and value['reason'] != 'none')
+    if not valid:
+        raise ResultCodecError('invalid_result')
+    return dict(value)
+
+
+def _reader_receipt_subject(value):
+    if value is not None:
+        _expected_subject(value)
+
+
+def decode_reader_receipt_record(frame: bytes, expected_bundle_id: str | None) -> dict:
+    """Parse intrinsic receipt claims; expected None matches only a null bundle.
+    No bundle files are read/hashed and no actual inspection, validated counts, complete
+    bundle, immutable Python/CLI pair, reader/public metadata provenance or freshness, trusted
+    harness case association or witness is proved. These remain external gates;
+    parsing grants no live authority, signal, retry or deadline reset.
+    """
+    _reader_receipt_subject(expected_bundle_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.READER_RECEIPT_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.READER_RECEIPT_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _reader_receipt_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if record['bundle_id'] != expected_bundle_id:
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_reader_receipt_record(record: dict, expected_bundle_id: str | None) -> bytes:
+    """Encode intrinsic receipt claims; expected None matches only a null bundle.
+    No bundle files are read/hashed and no actual inspection, validated counts, complete
+    bundle, immutable Python/CLI pair, reader/public metadata provenance or freshness, trusted
+    harness case association or witness is proved. These remain external gates;
+    encoding grants no live authority, signal, retry or deadline reset.
+    """
+    _reader_receipt_subject(expected_bundle_id)
+    validated = _reader_receipt_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.READER_RECEIPT_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if validated['bundle_id'] != expected_bundle_id:
+        raise ResultCodecError('wrong_subject')
+    return encoded
