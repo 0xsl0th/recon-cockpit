@@ -2364,3 +2364,55 @@ run only the new six units plus the affected preservation check. Actual 142 and
 eventual portable union 171 remain distinct from unchanged 29 formal portable
 and 89 native nodes. This slice earns no acceptance credit and authorizes no
 native execution or closed S4.2c checks.
+
+
+### Reviewed portable case-context codec slice
+
+This slice adds intrinsic parsing and encoding of the closed twelve-field
+`s43-case-context-v1` record. The APIs require expected case and bundle UUID4
+identities, checked in argument order before input and matched after complete
+intrinsic and canonical validation. Matching caller-supplied IDs does not
+authenticate them. No previous codec helper or import changes.
+
+All fields are nonnull exact strings. UUID4 and SHA256 values retain their existing
+validators. Closed statuses preserve `observed`, `refused`, `failed` and
+`interrupted_unknown`; fixtures are `allowed`, `invalid`, `restricted`, and review
+views are `terminal`, `graphical`. Parent/variant/node values must individually
+belong to their frozen inventory enums, then match an exact inventoried triple.
+The literal table preserves 90 triples, including 80 canonical parent mappings
+and 10 authority mappings, with 89 unique native nodes. The shared terminal node
+retains both `S4-K01` and `S4-A01`; portable-only V02/V03/V04 gain no native rows.
+Runtime parsing reads no inventory or fixture files.
+
+The general record cap stays 3072 bytes, with depth 1 for this flat grammar.
+The 4096-byte `context.json` singleton member cap remains separate and unchanged.
+The independently derived largest complete canonical record is
+702 bytes, using the longest valid mapping and metadata
+literals. Node strings are ASCII at most 256 bytes; variants and parents are
+ASCII at most 64 bytes and must match the exact finite inventory values.
+
+Root shape and bounded key checks precede scalar validation and the mapping
+relationship. Unknown scalar members yield `invalid_value`; individually valid
+members forming an uninventoried triple yield `invalid_result`. Duplicate keys,
+including escaped-equivalent duplicates, retain `invalid_shape`. Byte/depth and
+noncanonical failures retain `invalid_encoding`; floats/constants retain
+`invalid_value`. Decoders reject nested wrappers before parsing at depth 1;
+encoders reject wrong root shapes directly. Returned dictionaries are fresh and
+caller input is unchanged. Rejections expose bounded codes without raw input.
+
+The codec validates declared claims and the explicit plan mapping. Actual native
+execution, fixture/review-view/status correspondence, public-only manifest hashes,
+metadata freshness, code/runtime/graph identity, bundle membership, custody and
+closure, and completed-witness acceptance remain mandatory external gates. No
+additional fixture/view/status relationship is guessed from a variant name.
+Parsing preserves failed/interrupted claims and grants no signal, retry, deadline
+reset, authority or acceptance credit.
+
+The approved scope changes exactly six existing files: append-only contract and
+codec, six new finite unit nodes, this note, one inventory slice entry plus its
+contract hash, and five literal preservation hashes. Prior 142 codec nodes and
+helpers remain unchanged. Collect exactly 148 codec node IDs and run only the six
+new units plus the affected preservation check locally. The eventual portable
+union is 177 (148 codec plus 29 formal nodes); formal 29 and native 89 remain
+unchanged and no formal acceptance node is implemented here. Independent review,
+complete PR/main CI and current-main compatibility remain publication gates.
