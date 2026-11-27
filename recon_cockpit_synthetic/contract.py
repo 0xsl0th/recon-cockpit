@@ -726,3 +726,26 @@ TRANSACTION_RESULT_STATUS_REASONS = {
     'uncertain': ('commit_unknown',),
 }
 TRANSACTION_RESULT_COMMIT_FIELDS = ('transaction_id', 'last_event_sequence', 'operation_id', 'lease_id')
+
+
+# Intrinsic witness claims only; actual SQL boundaries and event validity are external.
+TRANSACTION_WITNESS_MAX_BYTES = 3072
+TRANSACTION_WITNESS_MAX_DEPTH = 2
+TRANSACTION_WITNESS_MAX_EVENT_IDS = 2
+TRANSACTION_WITNESS_FIELDS = (
+    'barrier', 'call_id', 'event_ids', 'method', 'ordinal', 'record_id',
+    'schema_version', 'transaction_result', 'writer_id',
+)
+TRANSACTION_WITNESS_SCALARS = (
+    ('barrier', 'transaction_barrier'), ('call_id', 'uuid4'), ('method', 'transaction_method'),
+    ('ordinal', 'positive_int'), ('record_id', 'uuid4'),
+    ('schema_version', 's43-transaction-witness-v1'), ('writer_id', 'uuid4'),
+)
+TRANSACTION_WITNESS_METHODS = (
+    'adopt_roe', 'cancel_lease', 'close_lease', 'observe_exchange', 'observe_result',
+    'prepare_lease', 'recover_owner', 'release', 'reserve', 'revoke_engagement',
+)
+TRANSACTION_WITNESS_BARRIERS = (
+    'call_entered', 'before_begin', 'after_begin', 'before_event_insert', 'before_commit',
+    'after_commit_before_ack', 'refused', 'unknown_commit',
+)

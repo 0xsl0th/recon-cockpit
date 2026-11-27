@@ -2099,3 +2099,110 @@ def encode_transaction_result(record: dict, expected_call_id: str) -> bytes:
     if validated['call_id'] != expected_call_id:
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _transaction_witness_scalar(value, kind):
+    if kind == 'positive_int':
+        if type(value) is not int or not 1 <= value <= 2147483647:
+            raise ResultCodecError('invalid_value')
+    elif kind in ('transaction_method', 'transaction_barrier', 's43-transaction-witness-v1'):
+        if type(value) is not str or len(value) > 64:
+            raise ResultCodecError('invalid_value')
+        if kind == 'transaction_method':
+            valid = value in contract.TRANSACTION_WITNESS_METHODS
+        elif kind == 'transaction_barrier':
+            valid = value in contract.TRANSACTION_WITNESS_BARRIERS
+        else:
+            valid = value == kind
+        if not valid:
+            raise ResultCodecError('invalid_value')
+    else:
+        _event_scalar(value, kind)
+
+
+def _transaction_witness_event_ids(value):
+    if type(value) is not list:
+        raise ResultCodecError('invalid_shape')
+    if len(value) > contract.TRANSACTION_WITNESS_MAX_EVENT_IDS:
+        raise ResultCodecError('invalid_value')
+    for item in value:
+        _event_scalar(item, 'uuid4')
+    if len(set(value)) != len(value):
+        raise ResultCodecError('invalid_value')
+    return list(value)
+
+
+def _transaction_witness_record(value):
+    _event_closed(value, contract.TRANSACTION_WITNESS_FIELDS)
+    for key, kind in contract.TRANSACTION_WITNESS_SCALARS:
+        _transaction_witness_scalar(value[key], kind)
+    event_ids = _transaction_witness_event_ids(value['event_ids'])
+    nested = value['transaction_result']
+    if nested is not None:
+        if type(nested) is not dict:
+            raise ResultCodecError('invalid_shape')
+        nested = _transaction_result_record(nested)
+        if len(_canonical(nested)) > contract.TRANSACTION_RESULT_MAX_BYTES:
+            raise ResultCodecError('invalid_encoding')
+        if nested['call_id'] != value['call_id']:
+            raise ResultCodecError('invalid_result')
+    result = dict(value)
+    result['event_ids'] = event_ids
+    result['transaction_result'] = nested
+    return result
+
+
+def _transaction_witness_subjects(writer, call, record):
+    for value in (writer, call, record):
+        _expected_subject(value)
+
+
+def decode_transaction_witness_record(frame: bytes, expected_writer_id: str,
+                                      expected_call_id: str, expected_record_id: str) -> dict:
+    """Parse intrinsic claims only; no actual SQL/atomicity, trusted writer/call,
+    contender order, result availability, persisted event validity, provenance/
+    freshness, physical custody/closure, completed witness or operation/recovery
+    authority is established. Barrier/result/event-count relations and recovery
+    eligibility remain external. Parsing grants no signal, retry or deadline reset.
+    """
+    _transaction_witness_subjects(expected_writer_id, expected_call_id, expected_record_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.TRANSACTION_WITNESS_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.TRANSACTION_WITNESS_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _transaction_witness_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(record[key] for key in ('writer_id', 'call_id', 'record_id')) != (
+            expected_writer_id, expected_call_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_transaction_witness_record(record: dict, expected_writer_id: str,
+                                      expected_call_id: str, expected_record_id: str) -> bytes:
+    """Encode intrinsic claims only; no actual SQL/atomicity, trusted writer/call,
+    contender order, result availability, persisted event validity, provenance/
+    freshness, physical custody/closure, completed witness or operation/recovery
+    authority is established. Barrier/result/event-count relations and recovery
+    eligibility remain external. Parsing grants no signal, retry or deadline reset.
+    """
+    _transaction_witness_subjects(expected_writer_id, expected_call_id, expected_record_id)
+    validated = _transaction_witness_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.TRANSACTION_WITNESS_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if tuple(validated[key] for key in ('writer_id', 'call_id', 'record_id')) != (
+            expected_writer_id, expected_call_id, expected_record_id):
+        raise ResultCodecError('wrong_subject')
+    return encoded

@@ -1,4 +1,4 @@
-"""One hundred thirty-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred forty-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -6942,5 +6942,462 @@ def test_transaction_result_encoding_and_depth():
         oversized = dict(record, schema_version='x' * 100000)
         _reject(lambda: codec.encode_transaction_result(oversized, SUBJECT), 'invalid_value')
         _reject(lambda: codec.decode_transaction_result(_wire(oversized), SUBJECT), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent witness grammar/fixtures; no production-table oracle.
+TXNW_TYPES = (
+    ('barrier', 'enum'), ('call_id', 'uuid'), ('event_ids', 'list'), ('method', 'enum'),
+    ('ordinal', 'integer'), ('record_id', 'uuid'), ('schema_version', 'literal'),
+    ('transaction_result', 'record?'), ('writer_id', 'uuid'),
+)
+TXNW_METHODS = ('adopt_roe', 'cancel_lease', 'close_lease', 'observe_exchange',
+                'observe_result', 'prepare_lease', 'recover_owner', 'release', 'reserve', 'revoke_engagement')
+TXNW_BARRIERS = ('call_entered', 'before_begin', 'after_begin', 'before_event_insert',
+                 'before_commit', 'after_commit_before_ack', 'refused', 'unknown_commit')
+TXNW_WRITER = '62345678-1234-4234-9234-123456789abc'
+TXNW_RECORD = '82345678-1234-4234-9234-123456789abc'
+TXNW_EVENT = '92345678-1234-4234-9234-123456789abc'
+TXNW_CASES = (
+    None, ('committed', None, False), ('committed', None, True),
+    ('refused', 'invalid_input', False), ('refused', 'stale_authority', False),
+    ('refused', 'wrong_state', False), ('refused', 'expired', False),
+    ('refused', 'budget_exhausted', False), ('refused', 'scope_refused', False),
+    ('unavailable', 'audit_unavailable', False), ('unavailable', 'store_unavailable', False),
+    ('unavailable', 'cleanup_unconfirmed', False), ('uncertain', 'commit_unknown', False),
+)
+TXNW_GOLDEN_CASES = (
+    (None, (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":null,"wr'
+        b'iter_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('committed', None, False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":1,"lease_id":null,"operation_id'
+        b'":null,"reason":null,"schema_version":"s43-txn-result-v1","status":"committed","transaction_id"'
+        b':"42345678-1234-4234-9234-123456789abc"},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('committed', None, True), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":1,"lease_id":"32345678-1234-423'
+        b'4-9234-123456789abc","operation_id":"22345678-1234-4234-9234-123456789abc","reason":null,"schem'
+        b'a_version":"s43-txn-result-v1","status":"committed","transaction_id":"42345678-1234-4234-9234-1'
+        b'23456789abc"},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'invalid_input', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"invalid_input","schema_version":"s43-txn-result-v1","status":"refused","tra'
+        b'nsaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'stale_authority', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"stale_authority","schema_version":"s43-txn-result-v1","status":"refused","t'
+        b'ransaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'wrong_state', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"wrong_state","schema_version":"s43-txn-result-v1","status":"refused","trans'
+        b'action_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'expired', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"expired","schema_version":"s43-txn-result-v1","status":"refused","transacti'
+        b'on_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'budget_exhausted', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"budget_exhausted","schema_version":"s43-txn-result-v1","status":"refused","'
+        b'transaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('refused', 'scope_refused', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"scope_refused","schema_version":"s43-txn-result-v1","status":"refused","tra'
+        b'nsaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('unavailable', 'audit_unavailable', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"audit_unavailable","schema_version":"s43-txn-result-v1","status":"unavailab'
+        b'le","transaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('unavailable', 'store_unavailable', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"store_unavailable","schema_version":"s43-txn-result-v1","status":"unavailab'
+        b'le","transaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('unavailable', 'cleanup_unconfirmed', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"cleanup_unconfirmed","schema_version":"s43-txn-result-v1","status":"unavail'
+        b'able","transaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+    (('uncertain', 'commit_unknown', False), (
+        b'{"barrier":"call_entered","call_id":"12345678-1234-4234-9234-123456789abc","event_ids":["223456'
+        b'78-1234-4234-9234-123456789abc"],"method":"reserve","ordinal":1,"record_id":"82345678-1234-4234'
+        b'-9234-123456789abc","schema_version":"s43-transaction-witness-v1","transaction_result":{"call_i'
+        b'd":"12345678-1234-4234-9234-123456789abc","last_event_sequence":null,"lease_id":null,"operation'
+        b'_id":null,"reason":"commit_unknown","schema_version":"s43-txn-result-v1","status":"uncertain","'
+        b'transaction_id":null},"writer_id":"62345678-1234-4234-9234-123456789abc"}'
+    )),
+)
+TXNW_MAXIMUM_SIZES = ((None, 402), (('committed', None, False), 645), (('committed', None, True), 713), (('refused', 'invalid_input', False), 614), (('refused', 'stale_authority', False), 616), (('refused', 'wrong_state', False), 612), (('refused', 'expired', False), 608), (('refused', 'budget_exhausted', False), 617), (('refused', 'scope_refused', False), 614), (('unavailable', 'audit_unavailable', False), 622), (('unavailable', 'store_unavailable', False), 622), (('unavailable', 'cleanup_unconfirmed', False), 624), (('uncertain', 'commit_unknown', False), 617))
+TXNW_MAXIMUM_BYTES = (
+    b'{"barrier":"after_commit_before_ack","call_id":"12345678-1234-4234-9234-123456789abc","event_id'
+    b's":["22345678-1234-4234-9234-123456789abc","92345678-1234-4234-9234-123456789abc"],"method":"re'
+    b'voke_engagement","ordinal":2147483647,"record_id":"82345678-1234-4234-9234-123456789abc","schem'
+    b'a_version":"s43-transaction-witness-v1","transaction_result":{"call_id":"12345678-1234-4234-923'
+    b'4-123456789abc","last_event_sequence":2147483647,"lease_id":"32345678-1234-4234-9234-123456789a'
+    b'bc","operation_id":"22345678-1234-4234-9234-123456789abc","reason":null,"schema_version":"s43-t'
+    b'xn-result-v1","status":"committed","transaction_id":"42345678-1234-4234-9234-123456789abc"},"wr'
+    b'iter_id":"62345678-1234-4234-9234-123456789abc"}'
+)
+
+
+def _txnw(case=None):
+    return dict(barrier='call_entered', call_id=SUBJECT, event_ids=[OTHER],
+        method='reserve', ordinal=1, record_id=TXNW_RECORD,
+        schema_version='s43-transaction-witness-v1',
+        transaction_result=None if case is None else _txn_result(*case), writer_id=TXNW_WRITER)
+
+
+def _txnw_maximum(case):
+    record = dict(_txnw(case), barrier='after_commit_before_ack', method='revoke_engagement',
+                  ordinal=2147483647, event_ids=[OTHER, TXNW_EVENT])
+    nested = record['transaction_result']
+    if nested is not None and nested['status'] == 'committed':
+        nested['last_event_sequence'] = 2147483647
+    return record
+
+
+def _txnw_args():
+    return TXNW_WRITER, SUBJECT, TXNW_RECORD
+
+
+def _txnw_accept(record):
+    args = tuple(record[k] for k in ('writer_id', 'call_id', 'record_id'))
+    before = _wire(record)
+    assert codec.encode_transaction_witness_record(record, *args) == before
+    assert _wire(record) == before
+    result = codec.decode_transaction_witness_record(before, *args)
+    assert type(result) is dict and result == record and result is not record
+    assert type(result['event_ids']) is list and result['event_ids'] is not record['event_ids']
+    if result['transaction_result'] is not None:
+        assert type(result['transaction_result']) is dict
+        assert result['transaction_result'] is not record['transaction_result']
+    return result
+
+
+def _txnw_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_transaction_witness_record(record, *_txnw_args()), code)
+    return _reject(lambda: codec.decode_transaction_witness_record(_wire(record), *_txnw_args()), decode_code or code)
+
+
+def test_transaction_witness_record_canonical_examples():
+    assert len(TXNW_TYPES) == 9 and len(TXNW_METHODS) == 10 and len(TXNW_BARRIERS) == 8
+    assert tuple(case for case, _ in TXNW_GOLDEN_CASES) == TXNW_CASES and len(TXNW_CASES) == 13
+    for case, golden in TXNW_GOLDEN_CASES:
+        record = _txnw(case)
+        assert set(record) == {k for k, _ in TXNW_TYPES}
+        assert codec.encode_transaction_witness_record(record, *_txnw_args()) == golden
+        assert codec.decode_transaction_witness_record(golden, *_txnw_args()) == record
+        first, second = _txnw_accept(record), _txnw_accept(record)
+        first['ordinal'] = 2
+        first['event_ids'].append(TXNW_EVENT)
+        if first['transaction_result'] is not None:
+            first['transaction_result']['reason'] = 'changed'
+        assert second == record
+        assert codec.encode_transaction_witness_record(dict(reversed(tuple(record.items()))), *_txnw_args()) == golden
+        for ids in ([], [OTHER], [OTHER, TXNW_EVENT], [TXNW_EVENT, OTHER]):
+            _txnw_accept(dict(record, event_ids=ids))
+    for case, size in TXNW_MAXIMUM_SIZES:
+        record = _txnw_maximum(case)
+        assert len(_wire(record)) == size and size <= 2048 < 3072
+        if record['transaction_result'] is not None:
+            assert len(_wire(record['transaction_result'])) <= 315 < 1024
+        _txnw_accept(record)
+    assert len(TXNW_MAXIMUM_SIZES) == 13
+    maximum = _txnw_maximum(('committed', None, True))
+    assert _wire(maximum) == TXNW_MAXIMUM_BYTES
+    assert max(size for _, size in TXNW_MAXIMUM_SIZES) == len(TXNW_MAXIMUM_BYTES)
+    equal = dict(_txnw(('committed', None, True)), writer_id=SUBJECT, record_id=SUBJECT, event_ids=[SUBJECT])
+    for key in ('call_id', 'transaction_id', 'operation_id', 'lease_id'):
+        equal['transaction_result'][key] = SUBJECT
+    _txnw_accept(equal)
+
+
+def test_transaction_witness_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class ListHook(list):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __iter__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        __hash__ = str.__hash__
+    class IntHook(int):
+        def __le__(self, other):
+            raise AssertionError('hook reached')
+        def __ge__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1], [{}]):
+        _txnw_reject(value, 'invalid_shape')
+    for case in (None, ('committed', None, True)):
+        _txnw_reject({'payload': _txnw(case)}, 'invalid_shape', 'invalid_encoding')
+        _txnw_reject([_txnw(case)], 'invalid_shape', 'invalid_encoding')
+    _reject(lambda: codec.encode_transaction_witness_record(DictHook(_txnw()), *_txnw_args()), 'invalid_shape')
+    _reject(lambda: codec.encode_transaction_witness_record(1.0, *_txnw_args()), 'invalid_shape')
+    _reject(lambda: codec.decode_transaction_witness_record(b'1.0', *_txnw_args()), 'invalid_value')
+    for key, typ in TXNW_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            record = _txnw()
+            if mutation != 'extra':
+                record.pop(key)
+            if mutation != 'missing':
+                record['RAW_SENTINEL'] = None
+            _txnw_reject(record, 'invalid_shape')
+        if typ in ('list', 'record?'):
+            continue
+        for bad in (None, True, False, 1.0, [], {}, 'RAW_SENTINEL', 0):
+            _txnw_reject(dict(_txnw(), **{key: bad}), 'invalid_value')
+        hook = IntHook(1) if typ == 'integer' else StringHook(SUBJECT)
+        _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), **{key: hook}), *_txnw_args()), 'invalid_value')
+    for bad in (None, True, 1, 'RAW_SENTINEL', {}):
+        _txnw_reject(dict(_txnw(), event_ids=bad), 'invalid_shape')
+    _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), event_ids=ListHook([SUBJECT])), *_txnw_args()), 'invalid_shape')
+    for bad in ((SUBJECT,), set(), b'ids'):
+        _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), event_ids=bad), *_txnw_args()), 'invalid_shape')
+    _txnw_accept(dict(_txnw(), transaction_result=None))
+    for bad in (True, 1, 'RAW_SENTINEL', [], [1], {}):
+        _txnw_reject(dict(_txnw(), transaction_result=bad), 'invalid_shape')
+    _txnw_reject(dict(_txnw(), transaction_result=[{}]), 'invalid_shape', 'invalid_encoding')
+    _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), transaction_result=DictHook(_txn_result())), *_txnw_args()), 'invalid_shape')
+    for key, typ in TXNR_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            nested = _txn_result()
+            if mutation != 'extra':
+                nested.pop(key)
+            if mutation != 'missing':
+                nested['RAW_SENTINEL'] = None
+            _txnw_reject(dict(_txnw(), transaction_result=nested), 'invalid_shape')
+        for bad in (True, False, 1.0, [], {}, 'RAW_SENTINEL'):
+            _txnw_reject(dict(_txnw(), transaction_result=dict(_txn_result(), **{key: bad})),
+                         'invalid_value', 'invalid_encoding' if type(bad) in (dict, list) else None)
+        hook = IntHook(1) if typ == 'sequence?' else StringHook(SUBJECT)
+        _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), transaction_result=dict(_txn_result(), **{key: hook})), *_txnw_args()), 'invalid_value')
+    for key in ('x' * 33, 'x' * 100000, 1, StringHook('method')):
+        record = _txnw()
+        record.pop('method')
+        record[key] = 'reserve'
+        _reject(lambda: codec.encode_transaction_witness_record(record, *_txnw_args()), 'invalid_shape')
+    _reject(lambda: codec.encode_transaction_witness_record(dict.fromkeys(range(10000)), *_txnw_args()), 'invalid_shape')
+
+
+def test_transaction_witness_record_enums_and_nested_relationships():
+    # Syntax only: there is no declared barrier/result or method/event-count table.
+    for method in TXNW_METHODS:
+        for barrier in TXNW_BARRIERS:
+            _txnw_accept(dict(_txnw(), method=method, barrier=barrier, event_ids=[OTHER, TXNW_EVENT]))
+    for barrier in TXNW_BARRIERS:
+        for case in TXNW_CASES:
+            for ids in ([], [OTHER], [OTHER, TXNW_EVENT]):
+                _txnw_accept(dict(_txnw(case), barrier=barrier, event_ids=ids))
+    for key, literal in (('method', 'reserve'), ('barrier', 'call_entered'), ('schema_version', 's43-transaction-witness-v1')):
+        for bad in ('', literal.upper(), literal + '\n', literal + 'x', 'x' * 65, 'x' * 100000):
+            _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), **{key: bad}), *_txnw_args()), 'invalid_value')
+            if len(bad) < 100000:
+                _txnw_reject(dict(_txnw(), **{key: bad}), 'invalid_value')
+    count = 0
+    for status in TXNR_STATUSES:
+        for reason in TXNR_REASONS:
+            for mask in range(16):
+                nested = _txn_result(status, reason)
+                for bit, key in enumerate(TXNR_COMMIT_FIELDS):
+                    nested[key] = (1 if key == 'last_event_sequence' else SUBJECT) if mask & (1 << bit) else None
+                if status == 'committed':
+                    accepted = reason is None and mask in (3, 15)
+                elif status == 'refused':
+                    accepted = mask == 0 and reason in ('invalid_input', 'stale_authority', 'wrong_state', 'expired', 'budget_exhausted', 'scope_refused')
+                elif status == 'unavailable':
+                    accepted = mask == 0 and reason in ('audit_unavailable', 'store_unavailable', 'cleanup_unconfirmed')
+                else:
+                    accepted = mask == 0 and reason == 'commit_unknown'
+                record = dict(_txnw(), transaction_result=nested)
+                if accepted:
+                    _txnw_accept(record)
+                else:
+                    _txnw_reject(record, 'invalid_result')
+                count += 1
+    assert count == 704
+    for case in TXNW_CASES[1:]:
+        nested = dict(_txn_result(*case), call_id=OTHER)
+        _txnw_reject(dict(_txnw(), transaction_result=nested), 'invalid_result')
+        nested['call_id'] = 'RAW_SENTINEL'
+        _txnw_reject(dict(_txnw(), transaction_result=nested), 'invalid_value')
+    bad_nested = dict(_txn_result(), call_id=OTHER, reason='commit_unknown')
+    _txnw_reject(dict(_txnw(), ordinal=0, event_ids=None, transaction_result=bad_nested), 'invalid_value')
+    _txnw_reject(dict(_txnw(), event_ids=None, transaction_result=bad_nested), 'invalid_shape')
+    _txnw_reject(dict(_txnw(), event_ids=['RAW_SENTINEL'], transaction_result=bad_nested), 'invalid_value')
+
+
+def test_transaction_witness_record_list_and_scalar_bounds():
+    class StringHooks(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        def __hash__(self):
+            raise AssertionError('hook reached')
+    for key in ('writer_id', 'call_id', 'record_id'):
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''), SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), '0' * 36, 'x' * 65):
+            _txnw_reject(dict(_txnw(), **{key: bad}), 'invalid_value')
+    for value in (1, 2147483647):
+        _txnw_accept(dict(_txnw(), ordinal=value))
+    for value in (0, -1, 2147483648, True, False, 1.0, '1', None):
+        _txnw_reject(dict(_txnw(), ordinal=value), 'invalid_value')
+    for ids in ([], [SUBJECT], [SUBJECT, OTHER], [OTHER, SUBJECT]):
+        _txnw_accept(dict(_txnw(), event_ids=ids))
+    for ids in ([SUBJECT, OTHER, TXNW_EVENT], [SUBJECT] * 3, [SUBJECT, SUBJECT], [OTHER, OTHER]):
+        _txnw_reject(dict(_txnw(), event_ids=ids), 'invalid_value')
+    for ids in ([StringHooks(SUBJECT), OTHER, TXNW_EVENT], [SUBJECT, StringHooks(SUBJECT)],
+                [StringHooks(SUBJECT), SUBJECT]):
+        _reject(lambda: codec.encode_transaction_witness_record(dict(_txnw(), event_ids=ids), *_txnw_args()), 'invalid_value')
+    for bad in (None, True, 0, 1.0, '', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''),
+                SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'),
+                '0' * 36, 'x' * 65, [], {}):
+        for ids in ([bad, SUBJECT], [SUBJECT, bad]):
+            _txnw_reject(dict(_txnw(), event_ids=ids), 'invalid_value',
+                         'invalid_encoding' if type(bad) in (dict, list) else None)
+    for key in ('call_id', 'operation_id', 'lease_id', 'transaction_id'):
+        for bad in ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-4234-', '-1234-'),
+                    SUBJECT.replace('-9234-', '-7234-'), '0' * 36, 'x' * 65):
+            _txnw_reject(dict(_txnw(), transaction_result=dict(_txn_result(), **{key: bad})), 'invalid_value')
+    for value in (0, -1, 2147483648, True, 1.0, '1'):
+        _txnw_reject(dict(_txnw(), transaction_result=dict(_txn_result(), last_event_sequence=value)), 'invalid_value')
+
+
+def test_transaction_witness_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    record, args = _txnw(('committed', None, True)), _txnw_args()
+    for index in range(3):
+        changed = list(args)
+        changed[index] = OTHER
+        _reject(lambda: codec.encode_transaction_witness_record(record, *changed), 'wrong_subject')
+        _reject(lambda: codec.decode_transaction_witness_record(_wire(record), *changed), 'wrong_subject')
+        for bad in (None, True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+            changed = list(args)
+            changed[index] = bad
+            code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+            for value in (record, None):
+                _reject(lambda: codec.encode_transaction_witness_record(value, *changed), code)
+            for value in (_wire(record), b''):
+                _reject(lambda: codec.decode_transaction_witness_record(value, *changed), code)
+    for first, second in ((0, 1), (0, 2), (1, 2)):
+        changed = list(args)
+        changed[first], changed[second] = 'malformed', None
+        _reject(lambda: codec.encode_transaction_witness_record(None, *changed), 'invalid_value')
+        _reject(lambda: codec.decode_transaction_witness_record(b'', *changed), 'invalid_value')
+        changed[first], changed[second] = None, 'malformed'
+        _reject(lambda: codec.encode_transaction_witness_record(None, *changed), 'invalid_shape')
+        _reject(lambda: codec.decode_transaction_witness_record(b'', *changed), 'invalid_shape')
+    wrong = (OTHER, OTHER, OTHER)
+    _reject(lambda: codec.decode_transaction_witness_record(_wire(record) + b'\n', *wrong), 'invalid_encoding')
+    for bad, code in ((dict(record, method='unknown'), 'invalid_value'),
+                      (dict(record, event_ids=None), 'invalid_shape'),
+                      (dict(record, transaction_result=dict(_txn_result(), call_id=OTHER)), 'invalid_result')):
+        _reject(lambda: codec.encode_transaction_witness_record(bad, *wrong), code)
+        _reject(lambda: codec.decode_transaction_witness_record(_wire(bad), *wrong), code)
+
+
+def test_transaction_witness_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record, args = _txnw(('committed', None, True)), _txnw_args()
+    wire = _wire(record)
+    nested_wire = _wire(record['transaction_result'])
+    reversed_nested = json.dumps(dict(reversed(tuple(record['transaction_result'].items()))), separators=(',', ':')).encode('ascii')
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire.replace(nested_wire, reversed_nested), wire + b'\n', b' ' + wire,
+                  wire.replace(b':', b': ', 1), wire.replace(b'"reserve"', b'"\\u0072eserve"'),
+                  wire.replace(b'"committed"', b'"\\u0063ommitted"'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{"b":{}}}', b'[[[]]]'):
+        error = _reject(lambda: codec.decode_transaction_witness_record(frame, *args), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"record_id":null,' + wire[1:], b'{"recor\\u0064_id":null,' + wire[1:],
+                  wire.replace(nested_wire, b'{"call_id":null,' + nested_wire[1:]),
+                  wire.replace(nested_wire, b'{"call_\\u0069d":null,' + nested_wire[1:])):
+        _reject(lambda: codec.decode_transaction_witness_record(frame, *args), 'invalid_shape')
+    for field in (b'ordinal', b'last_event_sequence'):
+        for scalar in (b'1.0', b'1e0', b'NaN', b'Infinity', b'-Infinity', b'-0'):
+            _reject(lambda: codec.decode_transaction_witness_record(wire.replace(b'"' + field + b'":1', b'"' + field + b'":' + scalar), *args), 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_transaction_witness_record(frame, *args), 'invalid_shape')
+    reordered = dict(record, event_ids=[OTHER, TXNW_EVENT])
+    reversed_ids = dict(record, event_ids=[TXNW_EVENT, OTHER])
+    assert _wire(reordered) != _wire(reversed_ids)
+    _txnw_accept(reordered)
+    _txnw_accept(reversed_ids)
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{"b":{}}}', b'[[[]]]', _wire({'payload': record}),
+                      _wire({'payload': _txnw()}), _wire(dict(record, event_ids=[{}]))):
+            _reject(lambda: codec.decode_transaction_witness_record(frame, *args), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_transaction_witness_record(b' ' * 3072, *args), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_transaction_witness_record(b'{"event_ids":[],"transaction_result":{}}', *args), 'invalid_shape')
+        assert len(calls) == 2
+        _txnw_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _txnw_reject(dict(record, schema_version=text), 'invalid_value')
+            _txnw_reject(dict(record, transaction_result=dict(_txn_result(), schema_version=text)), 'invalid_value')
+        _reject(lambda: codec.encode_transaction_witness_record(dict(record, schema_version='x' * 100000), *args), 'invalid_value')
+        _reject(lambda: codec.decode_transaction_witness_record(_wire(dict(record, schema_version='x' * 100000)), *args), 'invalid_encoding')
     finally:
         json.loads = original_loads
