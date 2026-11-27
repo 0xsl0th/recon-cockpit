@@ -1146,3 +1146,25 @@ CASE_CONTEXT_NATIVE_MAPPINGS = (('S4-A01', 'terminal', 'tests/test_secure_synthe
  ('S43-AUTH10',
   'concurrent_generation_writers',
   'tests/test_secure_synthetic_custody_linux.py::test_s43_authority[concurrent_generation_writers]'))
+
+
+# Intrinsic inspection claims only; actual reading and validated counts are external.
+READER_RECEIPT_MAX_BYTES = 3072
+READER_RECEIPT_MAX_DEPTH = 1
+READER_RECEIPT_FIELDS = (
+    'bundle_id', 'manifest_sha256', 'member_count', 'reader_code_sha256',
+    'reader_kind', 'reason', 'record_count', 'schema_version', 'status',
+)
+READER_RECEIPT_SCALARS = (
+    ('bundle_id', 'uuid4?'), ('manifest_sha256', 'sha256?'), ('member_count', 'member_count'),
+    ('reader_code_sha256', 'sha256'), ('reader_kind', 'reader_kind'),
+    ('reason', 'inspection_reason'), ('record_count', 'record_count'),
+    ('schema_version', 's43-inspection-v1'), ('status', 'inspection_status'),
+)
+READER_RECEIPT_COUNT_MAXIMA = {'member_count': 9, 'record_count': 1530}
+READER_RECEIPT_KINDS = ('python', 'cli')
+READER_RECEIPT_STATUSES = ('valid', 'invalid', 'unavailable')
+READER_RECEIPT_REASONS = (
+    'none', 'schema', 'identity', 'ordering', 'custody', 'budget', 'unsafe_path',
+    'changed_member', 'oversize', 'missing_member', 'unknown_member', 'unavailable_context',
+)

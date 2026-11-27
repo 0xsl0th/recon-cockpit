@@ -1,4 +1,4 @@
-"""One hundred forty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred fifty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -7837,5 +7837,372 @@ def test_case_context_record_encoding_and_depth():
         oversized = dict(record, node_id='x' * 100000)
         _reject(lambda: codec.encode_case_context_record(oversized, SUBJECT, OTHER), 'invalid_value')
         _reject(lambda: codec.decode_case_context_record(_wire(oversized), SUBJECT, OTHER), 'invalid_encoding')
+    finally:
+        json.loads = original_loads
+
+
+# Independent inspection receipt grammar and fixtures; no production-table oracle.
+RDR_TYPES = (
+    ('bundle_id', 'uuid?'), ('manifest_sha256', 'sha?'), ('member_count', 'count'),
+    ('reader_code_sha256', 'sha'), ('reader_kind', 'enum'), ('reason', 'enum'),
+    ('record_count', 'count'), ('schema_version', 'literal'), ('status', 'enum'),
+)
+RDR_STATUSES = ('valid', 'invalid', 'unavailable')
+RDR_KINDS = ('python', 'cli')
+RDR_REASONS = ('none', 'schema', 'identity', 'ordering', 'custody', 'budget', 'unsafe_path',
+               'changed_member', 'oversize', 'missing_member', 'unknown_member', 'unavailable_context')
+RDR_CASES = (('valid', 'none'), ('invalid', 'schema'), ('invalid', 'identity'), ('invalid', 'ordering'), ('invalid', 'custody'), ('invalid', 'budget'), ('invalid', 'unsafe_path'), ('invalid', 'changed_member'), ('invalid', 'oversize'), ('invalid', 'missing_member'), ('invalid', 'unknown_member'), ('invalid', 'unavailable_context'), ('unavailable', 'schema'), ('unavailable', 'identity'), ('unavailable', 'ordering'), ('unavailable', 'custody'), ('unavailable', 'budget'), ('unavailable', 'unsafe_path'), ('unavailable', 'changed_member'), ('unavailable', 'oversize'), ('unavailable', 'missing_member'), ('unavailable', 'unknown_member'), ('unavailable', 'unavailable_context'))
+RDR_GOLDENS = (
+    ('valid', 'none', (
+        b'{"bundle_id":"12345678-1234-4234-9234-123456789abc","manifest_sha256":"bbbbbbbbbbbbbbbbbbbbbbbb'
+        b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","member_count":9,"reader_code_sha256":"aaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"none","rec'
+        b'ord_count":2,"schema_version":"s43-inspection-v1","status":"valid"}'
+    )),
+    ('invalid', 'schema', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"schema","re'
+        b'cord_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'identity', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"identity","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'ordering', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"ordering","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'custody', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"custody","r'
+        b'ecord_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'budget', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"budget","re'
+        b'cord_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'unsafe_path', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unsafe_path'
+        b'","record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'changed_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"changed_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'oversize', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"oversize","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'missing_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"missing_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'unknown_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unknown_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('invalid', 'unavailable_context', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unavailable'
+        b'_context","record_count":0,"schema_version":"s43-inspection-v1","status":"invalid"}'
+    )),
+    ('unavailable', 'schema', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"schema","re'
+        b'cord_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'identity', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"identity","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'ordering', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"ordering","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'custody', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"custody","r'
+        b'ecord_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'budget', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"budget","re'
+        b'cord_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'unsafe_path', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unsafe_path'
+        b'","record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'changed_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"changed_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'oversize', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"oversize","'
+        b'record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'missing_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"missing_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'unknown_member', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unknown_mem'
+        b'ber","record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+    ('unavailable', 'unavailable_context', (
+        b'{"bundle_id":null,"manifest_sha256":null,"member_count":0,"reader_code_sha256":"aaaaaaaaaaaaaaa'
+        b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"unavailable'
+        b'_context","record_count":0,"schema_version":"s43-inspection-v1","status":"unavailable"}'
+    )),
+)
+RDR_MAXIMUM_SIZES = (('valid', 'none', 355), ('invalid', 'schema', 263), ('invalid', 'identity', 265), ('invalid', 'ordering', 265), ('invalid', 'custody', 264), ('invalid', 'budget', 263), ('invalid', 'unsafe_path', 268), ('invalid', 'changed_member', 271), ('invalid', 'oversize', 265), ('invalid', 'missing_member', 271), ('invalid', 'unknown_member', 271), ('invalid', 'unavailable_context', 276), ('unavailable', 'schema', 267), ('unavailable', 'identity', 269), ('unavailable', 'ordering', 269), ('unavailable', 'custody', 268), ('unavailable', 'budget', 267), ('unavailable', 'unsafe_path', 272), ('unavailable', 'changed_member', 275), ('unavailable', 'oversize', 269), ('unavailable', 'missing_member', 275), ('unavailable', 'unknown_member', 275), ('unavailable', 'unavailable_context', 280))
+RDR_MAXIMUM_BYTES = (
+    b'{"bundle_id":"12345678-1234-4234-9234-123456789abc","manifest_sha256":"bbbbbbbbbbbbbbbbbbbbbbbb'
+    b'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","member_count":9,"reader_code_sha256":"aaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reader_kind":"python","reason":"none","rec'
+    b'ord_count":1530,"schema_version":"s43-inspection-v1","status":"valid"}'
+)
+
+
+def _rr_record(status='valid', reason='none', kind='python'):
+    return dict(bundle_id=SUBJECT if status == 'valid' else None,
+                manifest_sha256='b' * 64 if status == 'valid' else None,
+                member_count=9 if status == 'valid' else 0,
+                reader_code_sha256='a' * 64, reader_kind=kind, reason=reason,
+                record_count=2 if status == 'valid' else 0,
+                schema_version='s43-inspection-v1', status=status)
+
+
+def _rr_maximum(status, reason):
+    return dict(_rr_record(status, reason), member_count=9, record_count=1530)
+
+
+def _rr_accept(record):
+    before = _wire(record)
+    expected = record['bundle_id']
+    assert codec.encode_reader_receipt_record(record, expected) == before
+    assert _wire(record) == before
+    result = codec.decode_reader_receipt_record(before, expected)
+    assert type(result) is dict and result == record and result is not record
+    assert all(type(value) in (str, int, type(None)) for value in result.values())
+    return result
+
+
+def _rr_reject(record, code, decode_code=None):
+    _reject(lambda: codec.encode_reader_receipt_record(record, SUBJECT), code)
+    return _reject(lambda: codec.decode_reader_receipt_record(_wire(record), SUBJECT), decode_code or code)
+
+
+def test_reader_receipt_record_canonical_examples():
+    assert len(RDR_TYPES) == 9 and len(RDR_CASES) == 23 and len(RDR_REASONS) == 12
+    assert tuple((s, r) for s, r, _ in RDR_GOLDENS) == RDR_CASES
+    for status, reason, golden in RDR_GOLDENS:
+        record = _rr_record(status, reason)
+        assert set(record) == {key for key, _ in RDR_TYPES}
+        expected = record['bundle_id']
+        assert codec.encode_reader_receipt_record(record, expected) == golden
+        assert codec.decode_reader_receipt_record(golden, expected) == record
+        first, second = _rr_accept(record), _rr_accept(record)
+        first['status'] = 'changed'
+        assert second == record
+        assert codec.encode_reader_receipt_record(dict(reversed(tuple(record.items()))), expected) == golden
+        _rr_accept(dict(record, reader_kind='cli'))
+    for status, reason, size in RDR_MAXIMUM_SIZES:
+        record = _rr_maximum(status, reason)
+        assert len(_wire(record)) == size <= 3072
+        _rr_accept(record)
+    assert len(RDR_MAXIMUM_SIZES) == 23
+    assert _wire(_rr_maximum('valid', 'none')) == RDR_MAXIMUM_BYTES
+    assert max(row[2] for row in RDR_MAXIMUM_SIZES) == len(RDR_MAXIMUM_BYTES)
+    _rr_accept(dict(_rr_record(), reader_code_sha256='b' * 64))
+
+
+def test_reader_receipt_record_shape_and_type_rejections():
+    class DictHook(dict):
+        def __len__(self):
+            raise AssertionError('hook reached')
+    class StringHook(str):
+        def __len__(self):
+            raise AssertionError('hook reached')
+        def __eq__(self, other):
+            raise AssertionError('hook reached')
+        __hash__ = str.__hash__
+    class IntHook(int):
+        def __le__(self, other):
+            raise AssertionError('hook reached')
+        def __ge__(self, other):
+            raise AssertionError('hook reached')
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [1], {}):
+        _rr_reject(value, 'invalid_shape')
+    for value in ([{}], {'payload': _rr_record()}, {'packet': _rr_record()}):
+        _rr_reject(value, 'invalid_shape', 'invalid_encoding')
+    for value in (DictHook(_rr_record()), 1.0, (), b'raw'):
+        _reject(lambda: codec.encode_reader_receipt_record(value, SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.decode_reader_receipt_record(b'1.0', SUBJECT), 'invalid_value')
+    for key, typ in RDR_TYPES:
+        for mutation in ('missing', 'unknown', 'extra'):
+            record = _rr_record()
+            if mutation != 'extra':
+                record.pop(key)
+            if mutation != 'missing':
+                record['RAW_SENTINEL'] = None
+            _rr_reject(record, 'invalid_shape')
+        for bad in (None, True, False, 1.0, [], {}, 'RAW_SENTINEL', 0):
+            if type(bad) is int and typ == 'count':
+                _rr_accept(dict(_rr_record(), **{key: bad}))
+                continue
+            code = 'invalid_result' if bad is None and typ.endswith('?') else 'invalid_value'
+            _rr_reject(dict(_rr_record(), **{key: bad}), code,
+                       'invalid_encoding' if type(bad) in (dict, list) else code)
+        hook = IntHook(1) if typ == 'count' else StringHook(_rr_record()[key])
+        _reject(lambda: codec.encode_reader_receipt_record(dict(_rr_record(), **{key: hook}), SUBJECT), 'invalid_value')
+    for key in ('x' * 33, 'x' * 100000, 1, StringHook('status')):
+        record = _rr_record()
+        record.pop('status')
+        record[key] = 'valid'
+        _reject(lambda: codec.encode_reader_receipt_record(record, SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.encode_reader_receipt_record(dict.fromkeys(range(10000)), SUBJECT), 'invalid_shape')
+
+
+def test_reader_receipt_record_status_and_relationships():
+    count = accepted = 0
+    for kind in RDR_KINDS:
+        for status in RDR_STATUSES:
+            for reason in RDR_REASONS:
+                for mask in range(4):
+                    record = _rr_record(status, reason, kind)
+                    record['bundle_id'] = SUBJECT if mask & 1 else None
+                    record['manifest_sha256'] = 'b' * 64 if mask & 2 else None
+                    valid = ((status == 'valid' and reason == 'none' and mask == 3)
+                             or (status in ('invalid', 'unavailable') and reason != 'none' and mask == 0))
+                    if valid:
+                        _rr_accept(record)
+                        accepted += 1
+                    else:
+                        _rr_reject(record, 'invalid_result')
+                    count += 1
+    assert count == 288 and accepted == 46
+    for key, _ in RDR_TYPES:
+        _rr_reject(dict(_rr_record('valid', 'schema'), **{key: 'RAW_SENTINEL'}), 'invalid_value')
+    for key, values in (('reader_kind', RDR_KINDS), ('status', RDR_STATUSES),
+                        ('reason', RDR_REASONS), ('schema_version', ('s43-inspection-v1',))):
+        for value in values:
+            for bad in ('', value.upper(), value + '\n', value + 'x', 'x' * 65):
+                _rr_reject(dict(_rr_record(), **{key: bad}), 'invalid_value')
+    for status, reason in RDR_CASES:
+        # Bounded count claims do not establish actual completed inspection.
+        for members, records in ((0, 0), (0, 1), (1, 0), (3, 10), (9, 1530)):
+            _rr_accept(dict(_rr_record(status, reason), member_count=members, record_count=records))
+    _rr_reject(dict(_rr_record('invalid', 'schema'), reader_code_sha256=None), 'invalid_value')
+
+
+def test_reader_receipt_record_scalar_bounds():
+    for key, typ in RDR_TYPES:
+        if typ.startswith('uuid'):
+            bads = ('', SUBJECT.upper(), SUBJECT + '\n', SUBJECT.replace('-', ''),
+                    SUBJECT.replace('-4234-', '-1234-'), SUBJECT.replace('-9234-', '-7234-'),
+                    '0' * 36, 'x' * 65)
+        elif typ.startswith('sha'):
+            bads = ('', 'a' * 63, 'a' * 65, 'A' * 64, 'g' * 64, 'a' * 64 + '\n', 'é' * 64)
+        else:
+            continue
+        for bad in bads:
+            _rr_reject(dict(_rr_record(), **{key: bad}), 'invalid_value')
+    for key, maximum in (('member_count', 9), ('record_count', 1530)):
+        for value in (0, 1, maximum):
+            _rr_accept(dict(_rr_record(), **{key: value}))
+        for value in (-1, maximum + 1, 2147483647, True, False, 0.0, 1.0, '0', None):
+            _rr_reject(dict(_rr_record(), **{key: value}), 'invalid_value')
+    _rr_reject(dict(_rr_record(), bundle_id=None), 'invalid_result')
+    _rr_reject(dict(_rr_record(), manifest_sha256=None), 'invalid_result')
+    _rr_accept(_rr_record('unavailable', 'unavailable_context'))
+
+
+def test_reader_receipt_record_expected_subject_binding():
+    class StringSubclass(str):
+        pass
+    valid = _rr_record()
+    failed = _rr_record('invalid', 'schema')
+    for record, expected in ((valid, SUBJECT), (failed, None)):
+        assert codec.decode_reader_receipt_record(_wire(record), expected) == record
+        assert codec.encode_reader_receipt_record(record, expected) == _wire(record)
+    for record, expected in ((valid, None), (valid, OTHER), (failed, SUBJECT), (failed, OTHER)):
+        _reject(lambda: codec.encode_reader_receipt_record(record, expected), 'wrong_subject')
+        _reject(lambda: codec.decode_reader_receipt_record(_wire(record), expected), 'wrong_subject')
+    for bad in (True, 1, b'uuid', [], {}, '', SUBJECT.upper(), SUBJECT + '\n', StringSubclass(SUBJECT)):
+        code = 'invalid_value' if type(bad) is str else 'invalid_shape'
+        for value in (valid, failed, None):
+            _reject(lambda: codec.encode_reader_receipt_record(value, bad), code)
+        for value in (_wire(valid), _wire(failed), b''):
+            _reject(lambda: codec.decode_reader_receipt_record(value, bad), code)
+    for expected in (None, OTHER):
+        for record, code in ((None, 'invalid_shape'), (dict(valid, reader_kind='unknown'), 'invalid_value'),
+                             (dict(valid, reason='schema'), 'invalid_result')):
+            _reject(lambda: codec.encode_reader_receipt_record(record, expected), code)
+            _reject(lambda: codec.decode_reader_receipt_record(_wire(record), expected), code)
+        _reject(lambda: codec.decode_reader_receipt_record(_wire(valid) + b'\n', expected), 'invalid_encoding')
+    _reject(lambda: codec.decode_reader_receipt_record(_wire(failed) + b'\n', SUBJECT), 'invalid_encoding')
+    _reject(lambda: codec.decode_reader_receipt_record(b'', None), 'invalid_encoding')
+
+
+def test_reader_receipt_record_encoding_and_depth():
+    class BytesSubclass(bytes):
+        pass
+    record = _rr_record()
+    wire = _wire(record)
+    for frame in (json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii'),
+                  wire + b'\n', b' ' + wire, wire.replace(b':', b': ', 1),
+                  wire.replace(b'"valid"', b'"\\u0076alid"'),
+                  b'\xef\xbb\xbf' + wire, wire + b'\xff', b'', b' ', b'{', b'}', b'{}x', b'{"x":"\\q"}',
+                  b'x' * 3073, b'{"a":{}}', b'[[]]'):
+        error = _reject(lambda: codec.decode_reader_receipt_record(frame, SUBJECT), 'invalid_encoding')
+        assert error.__context__ is None and error.__cause__ is None
+    for frame in (b'{"bundle_id":null,' + wire[1:], b'{"bundle_\\u0069d":null,' + wire[1:]):
+        _reject(lambda: codec.decode_reader_receipt_record(frame, SUBJECT), 'invalid_shape')
+    for key in ('member_count', 'record_count'):
+        base = dict(record, **{key: 0})
+        token = ('"' + key + '":0').encode('ascii')
+        for scalar in (b'0.0', b'0e0', b'NaN', b'Infinity', b'-Infinity', b'-0'):
+            frame = _wire(base).replace(token, ('"' + key + '":').encode('ascii') + scalar)
+            _reject(lambda: codec.decode_reader_receipt_record(frame, SUBJECT),
+                    'invalid_encoding' if scalar == b'-0' else 'invalid_value')
+    for frame in (bytearray(wire), memoryview(wire), wire.decode('ascii'), None, BytesSubclass(wire)):
+        _reject(lambda: codec.decode_reader_receipt_record(frame, SUBJECT), 'invalid_shape')
+    calls = []
+    original_loads = json.loads
+    def observed_loads(*values, **kwargs):
+        calls.append(1)
+        return original_loads(*values, **kwargs)
+    json.loads = observed_loads
+    try:
+        for frame in (b'x' * 3073, b'{"a":{}}', b'[[]]', _wire({'payload': record}), _wire(dict(record, reason=[]))):
+            _reject(lambda: codec.decode_reader_receipt_record(frame, SUBJECT), 'invalid_encoding')
+            assert not calls
+        _reject(lambda: codec.decode_reader_receipt_record(b' ' * 3072, SUBJECT), 'invalid_encoding')
+        assert len(calls) == 1
+        _reject(lambda: codec.decode_reader_receipt_record(b'{}', SUBJECT), 'invalid_shape')
+        assert len(calls) == 2
+        _rr_accept(record)
+        assert len(calls) == 3
+        for text in ('[' * 20, '\\"' + '[' * 20, '\\\\' + ']' * 20):
+            _rr_reject(dict(record, schema_version=text), 'invalid_value')
+        oversized = dict(record, reader_kind='x' * 100000)
+        _reject(lambda: codec.encode_reader_receipt_record(oversized, SUBJECT), 'invalid_value')
+        _reject(lambda: codec.decode_reader_receipt_record(_wire(oversized), SUBJECT), 'invalid_encoding')
     finally:
         json.loads = original_loads
