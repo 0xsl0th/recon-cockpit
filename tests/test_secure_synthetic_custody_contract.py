@@ -1,4 +1,4 @@
-"""One hundred fifty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred sixty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -8206,3 +8206,360 @@ def test_reader_receipt_record_encoding_and_depth():
         _reject(lambda: codec.decode_reader_receipt_record(_wire(oversized), SUBJECT), 'invalid_encoding')
     finally:
         json.loads = original_loads
+
+
+# Independent manifest fixtures: never read production tables or local evidence.
+PM_ROWS = (
+    ('authority.jsonl', 524288, 128), ('bindings.jsonl', 131072, 64),
+    ('context.json', 4096, 1), ('observations.jsonl', 131072, 32),
+    ('physical.jsonl', 3145728, 1075), ('progress.jsonl', 65536, 64),
+    ('result.json', 1024, 1), ('transactions.jsonl', 131072, 64),
+)
+PM_MINIMUM_BYTES = (
+    b'{"bundle_id":"12345678-1234-4234-9234-123456789abc","context_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","members":[{"bytes":0,"name":"authority.jsonl","record'
+    b's":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"bytes":0,"n'
+    b'ame":"bindings.jsonl","records":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaa"},{"bytes":0,"name":"context.json","records":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"bytes":0,"name":"observations.jsonl","records":0,"'
+    b'sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"bytes":0,"name":"'
+    b'physical.jsonl","records":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaa"},{"bytes":0,"name":"progress.jsonl","records":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"bytes":0,"name":"result.json","records":0,"sha256":"aa'
+    b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"bytes":0,"name":"transaction'
+    b's.jsonl","records":0,"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    b'"}],"schema_version":"s43-public-bundle-v1","total_bytes":0}'
+)
+PM_MAXIMUM_BYTES = (
+    b'{"bundle_id":"ffffffff-ffff-4fff-bfff-ffffffffffff","context_sha256":"fffffffffffffffffffffffff'
+    b'fffffffffffffffffffffffffffffffffffffff","members":[{"bytes":524288,"name":"authority.jsonl","r'
+    b'ecords":128,"sha256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},{"byte'
+    b's":131072,"name":"bindings.jsonl","records":64,"sha256":"ffffffffffffffffffffffffffffffffffffff'
+    b'ffffffffffffffffffffffffff"},{"bytes":4096,"name":"context.json","records":1,"sha256":"ffffffff'
+    b'ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},{"bytes":131072,"name":"observations'
+    b'.jsonl","records":32,"sha256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    b'"},{"bytes":3145728,"name":"physical.jsonl","records":1075,"sha256":"ffffffffffffffffffffffffff'
+    b'ffffffffffffffffffffffffffffffffffffff"},{"bytes":65536,"name":"progress.jsonl","records":64,"s'
+    b'ha256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},{"bytes":1024,"name"'
+    b':"result.json","records":1,"sha256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    b'ffffff"},{"bytes":131072,"name":"transactions.jsonl","records":64,"sha256":"fffffffffffffffffff'
+    b'fffffffffffffffffffffffffffffffffffffffffffff"}],"schema_version":"s43-public-bundle-v1","total'
+    b'_bytes":4194304}'
+)
+
+
+def _pm_record(maximum=False):
+    return dict(bundle_id='ffffffff-ffff-4fff-bfff-ffffffffffff' if maximum else SUBJECT,
+                context_sha256=('f' if maximum else 'a') * 64,
+                members=[dict(name=n, bytes=b if maximum else 0,
+                              sha256=('f' if maximum else 'a') * 64,
+                              records=r if maximum else 0) for n, b, r in PM_ROWS],
+                schema_version='s43-public-bundle-v1', total_bytes=4194304 if maximum else 0)
+
+
+def _pm_accept(record):
+    expected = record['bundle_id']
+    before = _wire(record)
+    encoded = codec.encode_public_manifest_record(record, expected)
+    assert encoded == before
+    first = codec.decode_public_manifest_record(encoded, expected)
+    second = codec.decode_public_manifest_record(encoded, expected)
+    assert first == second == record and first is not second
+    assert first['members'] is not second['members'] and first['members'] is not record['members']
+    for a, b, c in zip(first['members'], second['members'], record['members']):
+        assert a is not b and a is not c
+    first['members'][0]['records'] = -1
+    first['members'].pop()
+    assert second == record and _wire(record) == before
+    return encoded
+
+
+def _pm_reject(record, code, decode_code=None):
+    for call, expected in (
+            (lambda: codec.encode_public_manifest_record(record, SUBJECT), code),
+            (lambda: codec.decode_public_manifest_record(_wire(record), SUBJECT), decode_code or code)):
+        error = _reject(call, expected)
+        assert error.__cause__ is None and error.__context__ is None
+
+
+def _pm_bomb(*_args, **_kwargs):
+    raise AssertionError('untrusted hook or unbounded iteration was called')
+
+
+def test_public_manifest_record_canonical_examples():
+    assert len(PM_MINIMUM_BYTES) == 1200
+    assert len(PM_MAXIMUM_BYTES) == 1251
+    assert _pm_accept(_pm_record()) == PM_MINIMUM_BYTES
+    assert _pm_accept(_pm_record(True)) == PM_MAXIMUM_BYTES
+    assert json.loads(PM_MINIMUM_BYTES) == _pm_record()
+    assert json.loads(PM_MAXIMUM_BYTES) == _pm_record(True)
+    # Neither a total sum nor context-digest equality has been specified.
+    record = _pm_record(True)
+    record['total_bytes'] = 0
+    record['context_sha256'] = 'a' * 64
+    assert sum(e['bytes'] for e in record['members']) > record['total_bytes']
+    assert record['context_sha256'] != record['members'][2]['sha256']
+    _pm_accept(record)  # Grammar acceptance gives no valid-bundle credit.
+    record = _pm_record()
+    record['total_bytes'] = 4194304
+    record['members'][2]['records'] = 1
+    record['members'][2]['bytes'] = 0
+    _pm_accept(record)
+    reordered = dict(reversed(tuple(record.items())))
+    reordered['members'] = [dict(reversed(tuple(e.items()))) for e in record['members']]
+    assert _pm_accept(reordered) == _wire(record)
+
+
+def test_public_manifest_record_shape_and_type_rejections():
+    for value in (None, True, 0, 'RAW_SENTINEL', [], [0]):
+        _pm_reject(value, 'invalid_shape')
+    _reject(lambda: codec.encode_public_manifest_record([_pm_record()], SUBJECT), 'invalid_shape')
+    _reject(lambda: codec.decode_public_manifest_record(b'[' + PM_MINIMUM_BYTES + b']', SUBJECT),
+            'invalid_encoding')
+    for level in ('root', 'entry'):
+        keys = tuple(_pm_record()) if level == 'root' else ('name', 'bytes', 'sha256', 'records')
+        for key in keys:
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][0]
+            del target[key]
+            _pm_reject(record, 'invalid_shape')
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][0]
+            target['x'] = target.pop(key)
+            _pm_reject(record, 'invalid_shape')
+        for key in ('x', 'x' * 10000):
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][0]
+            target[key] = 0
+            _pm_reject(record, 'invalid_shape', 'invalid_encoding' if len(key) > 100 else None)
+        for key in (None, 1):
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][0]
+            del target[next(iter(target))]
+            target[key] = 0
+            _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_shape')
+    for value in (None, 0, 'RAW_SENTINEL', {}, ()):
+        record = _pm_record()
+        record['members'] = value
+        _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_shape')
+        # A tuple has JSON list spelling, not an exact Python type representation.
+        if type(value) is not tuple:
+            _reject(lambda: codec.decode_public_manifest_record(_wire(record), SUBJECT), 'invalid_shape')
+    for value in (None, 0, 'RAW_SENTINEL', []):
+        record = _pm_record()
+        record['members'][0] = value
+        _pm_reject(record, 'invalid_shape')
+
+    class HostileDict(dict):
+        __len__ = __iter__ = items = keys = copy = _pm_bomb
+
+    class HostileList(list):
+        __len__ = __iter__ = __getitem__ = copy = _pm_bomb
+
+    class HostileString(str):
+        __len__ = __eq__ = __hash__ = _pm_bomb
+
+    class HostileKey(str):
+        __len__ = __eq__ = _pm_bomb
+        __hash__ = str.__hash__
+
+    class HostileInt(int):
+        __le__ = __ge__ = __eq__ = __int__ = _pm_bomb
+
+    _reject(lambda: codec.encode_public_manifest_record(HostileDict(_pm_record()), SUBJECT), 'invalid_shape')
+    record = _pm_record()
+    record['members'] = HostileList(record['members'])
+    _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_shape')
+    record = _pm_record()
+    record['members'][0] = HostileDict(record['members'][0])
+    _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_shape')
+    for level, keys in (('root', ('bundle_id', 'context_sha256', 'schema_version', 'total_bytes')),
+                        ('entry', ('name', 'bytes', 'sha256', 'records'))):
+        for key in keys:
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][0]
+            target[key] = HostileInt(0) if type(target[key]) is int else HostileString(target[key])
+            _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_value')
+        record = _pm_record()
+        target = record if level == 'root' else record['members'][0]
+        key = next(iter(target))
+        value = target.pop(key)
+        target[HostileKey(key)] = value
+        _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_shape')
+    # Non-exact scalar types are rejected before their hooks; byte values stay private.
+    for key in ('bundle_id', 'context_sha256', 'schema_version', 'total_bytes'):
+        record = _pm_record()
+        record[key] = b'RAW_SENTINEL'
+        _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_value')
+
+
+def test_public_manifest_record_member_set_and_order():
+    for size in (0, 7, 9):
+        record = _pm_record()
+        record['members'] = [None] * size
+        _pm_reject(record, 'invalid_value')  # Cardinality before entries.
+    record = _pm_record()
+    record['members'] = [_pm_bomb] * 10000
+    _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_value')
+    for index in range(8):
+        record = _pm_record()
+        del record['members'][index]
+        _pm_reject(record, 'invalid_value')
+        record = _pm_record()
+        record['members'][index] = dict(record['members'][(index + 1) % 8])
+        _pm_reject(record, 'invalid_value')
+    for index in range(7):
+        record = _pm_record()
+        members = record['members']
+        members[index], members[index + 1] = members[index + 1], members[index]
+        before = _wire(record)
+        _pm_reject(record, 'invalid_value')
+        assert _wire(record) == before  # No in-place sorting/normalization.
+    record = _pm_record()
+    record['members'].reverse()
+    _pm_reject(record, 'invalid_value')
+    for name in ('manifest.json', '../context.json', '/context.json', 'context.json/',
+                 'CONTEXT.JSON', 'context.json\n', '', 'unknown', 'authority.json'):
+        record = _pm_record()
+        record['members'][0]['name'] = name
+        _pm_reject(record, 'invalid_value')
+    # All entry shapes/scalars precede the final ordered-name check.
+    record = _pm_record()
+    record['members'][0], record['members'][1] = record['members'][1], record['members'][0]
+    record['members'][-1].pop('sha256')
+    _pm_reject(record, 'invalid_shape')
+    record = _pm_record()
+    record['bundle_id'] = 'bad'
+    record['members'] = None
+    _pm_reject(record, 'invalid_value')  # Root scalar before list shape.
+
+
+def test_public_manifest_record_scalar_bounds():
+    for level, index, key, maximum in (
+            [('root', None, 'total_bytes', 4194304)] +
+            [('entry', j, k, cap) for j, (_, b, r) in enumerate(PM_ROWS)
+             for k, cap in (('bytes', b), ('records', r))]):
+        for value in (0, maximum):
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][index]
+            target[key] = value
+            _pm_accept(record)
+        for value in (-1, maximum + 1, True, False, 0.0, 1.0, '0', None, [], {}):
+            record = _pm_record()
+            target = record if level == 'root' else record['members'][index]
+            target[key] = value
+            decoder = 'invalid_encoding' if level == 'entry' and type(value) in (list, dict) else None
+            _pm_reject(record, 'invalid_value', decoder)
+    for key in ('bundle_id', 'context_sha256', 'schema_version'):
+        for value in (None, True, 0, '', [], {}):
+            record = _pm_record()
+            record[key] = value
+            _pm_reject(record, 'invalid_value')
+    for value in ('A' * 64, 'g' * 64, 'a' * 63, 'a' * 65, 'a' * 63 + '\n'):
+        record = _pm_record()
+        record['context_sha256'] = value
+        _pm_reject(record, 'invalid_value')
+        for index in range(8):
+            record = _pm_record()
+            record['members'][index]['sha256'] = value
+            _pm_reject(record, 'invalid_value')
+    for value in (SUBJECT.upper(), SUBJECT[:14] + '1' + SUBJECT[15:],
+                  SUBJECT[:19] + '7' + SUBJECT[20:], SUBJECT[:-1], SUBJECT + '0',
+                  '0' * 36, 'x' * 65, SUBJECT + '\n'):
+        record = _pm_record()
+        record['bundle_id'] = value
+        _pm_reject(record, 'invalid_value')
+    for value in ('s43-public-bundle-v2', 'S43-public-bundle-v1', 's43-public-bundle-v1\n'):
+        record = _pm_record()
+        record['schema_version'] = value
+        _pm_reject(record, 'invalid_value')
+    for key in ('name', 'sha256'):
+        for value in (None, True, 0, [], {}):
+            record = _pm_record()
+            record['members'][0][key] = value
+            _pm_reject(record, 'invalid_value',
+                       'invalid_encoding' if type(value) in (list, dict) else None)
+    record = _pm_record()
+    record['context_sha256'] = 'x' * 10000
+    _pm_reject(record, 'invalid_value', 'invalid_encoding')
+
+
+def test_public_manifest_record_expected_subject_binding():
+    for expected, code in ((None, 'invalid_shape'), (0, 'invalid_shape'), (True, 'invalid_shape'),
+                           ([], 'invalid_shape'), (b'bad', 'invalid_shape'), ('', 'invalid_value'),
+                           (OTHER.upper(), 'invalid_value'), ('x' * 10000, 'invalid_value'),
+                           (SUBJECT[:14] + '1' + SUBJECT[15:], 'invalid_value'),
+                           (SUBJECT[:19] + '7' + SUBJECT[20:], 'invalid_value')):
+        for record in (_pm_record(), None):
+            _reject(lambda: codec.encode_public_manifest_record(record, expected), code)
+        for frame in (PM_MINIMUM_BYTES, b'{', None, b'x' * 1252):
+            _reject(lambda: codec.decode_public_manifest_record(frame, expected), code)
+    class HostileExpected(str):
+        __len__ = __eq__ = __hash__ = _pm_bomb
+    _reject(lambda: codec.encode_public_manifest_record(None, HostileExpected(SUBJECT)), 'invalid_shape')
+    _reject(lambda: codec.decode_public_manifest_record(b'{', HostileExpected(SUBJECT)), 'invalid_shape')
+    _reject(lambda: codec.encode_public_manifest_record(_pm_record(), OTHER), 'wrong_subject')
+    _reject(lambda: codec.decode_public_manifest_record(PM_MINIMUM_BYTES, OTHER), 'wrong_subject')
+    record = _pm_record()
+    record['bundle_id'] = OTHER
+    _pm_accept(record)
+    record['total_bytes'] = -1
+    _reject(lambda: codec.encode_public_manifest_record(record, SUBJECT), 'invalid_value')
+    _reject(lambda: codec.decode_public_manifest_record(_wire(record), SUBJECT), 'invalid_value')
+    _reject(lambda: codec.decode_public_manifest_record(PM_MINIMUM_BYTES + b'\n', OTHER), 'invalid_encoding')
+    with pytest.raises(TypeError):
+        codec.encode_public_manifest_record(_pm_record())
+    with pytest.raises(TypeError):
+        codec.decode_public_manifest_record(PM_MINIMUM_BYTES)
+
+
+def test_public_manifest_record_encoding_and_depth():
+    for frame in (None, '', bytearray(PM_MINIMUM_BYTES), memoryview(PM_MINIMUM_BYTES), []):
+        _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_shape')
+    class HostileBytes(bytes):
+        __len__ = isascii = decode = _pm_bomb
+    _reject(lambda: codec.decode_public_manifest_record(HostileBytes(PM_MINIMUM_BYTES), SUBJECT), 'invalid_shape')
+    for frame in (b'', b'{', b'{"x":}', b'{"x":"\\q"}', b'\xef\xbb\xbf' + PM_MINIMUM_BYTES,
+                  b'\xff', PM_MINIMUM_BYTES[:-1], PM_MINIMUM_BYTES + b'0',
+                  b' ' + PM_MINIMUM_BYTES, PM_MINIMUM_BYTES + b'\n',
+                  PM_MINIMUM_BYTES.replace(b'{"bundle_id"', b'{ "bundle_id"', 1),
+                  PM_MINIMUM_BYTES.replace(b'context.json', b'context\\u002ejson', 1)):
+        _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_encoding')
+    for frame in (
+            PM_MINIMUM_BYTES[:-1] + b',"total_bytes":0}',
+            PM_MINIMUM_BYTES[:-1] + b',"total_\\u0062ytes":0}',
+            PM_MINIMUM_BYTES.replace(b'"records":0', b'"records":0,"records":0', 1),
+            PM_MINIMUM_BYTES.replace(b'"records":0', b'"records":0,"\\u0072ecords":0', 1)):
+        assert len(frame) < 1251
+        _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_shape')
+    for key in (b'bytes', b'records', b'total_bytes'):
+        needle = b'"' + key + b'":0'
+        for value in (b'0.0', b'0e0', b'NaN', b'Infinity', b'-Infinity'):
+            frame = PM_MINIMUM_BYTES.replace(needle, b'"' + key + b'":' + value, 1)
+            _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_value')
+        frame = PM_MINIMUM_BYTES.replace(needle, b'"' + key + b'":-0', 1)
+        _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_encoding')
+    # Canonical root/entry key order matters; supplied member order is intrinsic.
+    record = _pm_record()
+    reversed_root = json.dumps(dict(reversed(tuple(record.items()))), separators=(',', ':')).encode('ascii')
+    assert len(reversed_root) < 1251 and reversed_root != PM_MINIMUM_BYTES
+    _reject(lambda: codec.decode_public_manifest_record(reversed_root, SUBJECT), 'invalid_encoding')
+    frame = PM_MINIMUM_BYTES.replace(b'{"bytes":0,"name":"authority.jsonl"',
+                                    b'{"name":"authority.jsonl","bytes":0', 1)
+    _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_encoding')
+    # Byte/depth preflight must finish before the JSON parser can be called.
+    original_loads = codec.json.loads
+    try:
+        codec.json.loads = _pm_bomb
+        for frame in (b'x' * 1252, PM_MAXIMUM_BYTES + b'\n', b'[[[[]]]]',
+                      b'[' + PM_MINIMUM_BYTES + b']', b'\xff'):
+            _reject(lambda: codec.decode_public_manifest_record(frame, SUBJECT), 'invalid_encoding')
+    finally:
+        codec.json.loads = original_loads
+    # Root scalar containers fit depth3; entry scalar containers reach depth4.
+    record = _pm_record()
+    record['total_bytes'] = []
+    _pm_reject(record, 'invalid_value')
+    record = _pm_record()
+    record['members'][0]['records'] = []
+    _pm_reject(record, 'invalid_value', 'invalid_encoding')
