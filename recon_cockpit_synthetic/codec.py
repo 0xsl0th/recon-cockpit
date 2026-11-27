@@ -2364,3 +2364,89 @@ def encode_reader_receipt_record(record: dict, expected_bundle_id: str | None) -
     if validated['bundle_id'] != expected_bundle_id:
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def _public_manifest_count(value, maximum):
+    if type(value) is not int or not 0 <= value <= maximum:
+        raise ResultCodecError('invalid_value')
+
+
+def _public_manifest_record(value):
+    _event_closed(value, contract.PUBLIC_MANIFEST_FIELDS)
+    for key, kind in contract.PUBLIC_MANIFEST_SCALARS:
+        item = value[key]
+        if kind == 'bounded_bundle_bytes':
+            _public_manifest_count(item, contract.PUBLIC_MANIFEST_TOTAL_BYTES_MAX)
+        elif kind == 's43-public-bundle-v1':
+            if type(item) is not str or len(item) > 64 or item != kind:
+                raise ResultCodecError('invalid_value')
+        else:
+            _event_scalar(item, kind)
+    members = value['members']
+    if type(members) is not list:
+        raise ResultCodecError('invalid_shape')
+    if len(members) != len(contract.PUBLIC_MANIFEST_NAMES):
+        raise ResultCodecError('invalid_value')
+    for entry in members:
+        _event_closed(entry, contract.PUBLIC_MANIFEST_ENTRY_FIELDS)
+        name = entry['name']
+        if type(name) is not str or len(name) > 18 or name not in contract.PUBLIC_MANIFEST_NAMES:
+            raise ResultCodecError('invalid_value')
+        byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS[name]
+        _public_manifest_count(entry['bytes'], byte_cap)
+        _event_scalar(entry['sha256'], 'sha256')
+        _public_manifest_count(entry['records'], record_cap)
+    if tuple(entry['name'] for entry in members) != contract.PUBLIC_MANIFEST_NAMES:
+        raise ResultCodecError('invalid_value')
+    result = dict(value)
+    result['members'] = [dict(entry) for entry in members]
+    return result
+
+
+def decode_public_manifest_record(frame: bytes, expected_bundle_id: str) -> dict:
+    """Parse bounded manifest grammar and caller-supplied subject equality only.
+    No files, actual counts/hashes, accounting, digest links, provenance, inspection,
+    valid bundle, completed witness or live authority are proved. Actual exporter/
+    reader and bundle consistency require reviewed total_bytes/context_sha256
+    semantics and all existing aggregate, owned-file, time and acceptance gates.
+    No signal, retry or deadline reset is granted.
+    """
+    _expected_subject(expected_bundle_id)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if not 0 < len(frame) <= contract.PUBLIC_MANIFEST_MAX_BYTES or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    text = frame.decode('ascii')
+    _depth(text, contract.PUBLIC_MANIFEST_MAX_DEPTH)
+    malformed = False
+    try:
+        value = json.loads(text, object_pairs_hook=_pairs,
+                           parse_float=_reject_number, parse_constant=_reject_number)
+    except json.JSONDecodeError:
+        malformed = True
+    if malformed:
+        raise ResultCodecError('invalid_encoding')
+    record = _public_manifest_record(value)
+    if _canonical(record) != frame:
+        raise ResultCodecError('invalid_encoding')
+    if record['bundle_id'] != expected_bundle_id:
+        raise ResultCodecError('wrong_subject')
+    return record
+
+
+def encode_public_manifest_record(record: dict, expected_bundle_id: str) -> bytes:
+    """Encode intrinsic grammar claims only; no files, actual counts/hashes,
+    accounting, digest links, provenance, inspection, valid bundle or witness.
+    Actual exporter/reader and bundle consistency require reviewed total_bytes/
+    context_sha256 semantics and all aggregate, owned-file, time and acceptance
+    gates. Caller-supplied equality grants no live authority, signal, retry or
+    deadline reset.
+    """
+    _expected_subject(expected_bundle_id)
+    validated = _public_manifest_record(record)
+    encoded = _canonical(validated)
+    if len(encoded) > contract.PUBLIC_MANIFEST_MAX_BYTES:
+        raise ResultCodecError('invalid_encoding')
+    if validated['bundle_id'] != expected_bundle_id:
+        raise ResultCodecError('wrong_subject')
+    return encoded

@@ -1168,3 +1168,30 @@ READER_RECEIPT_REASONS = (
     'none', 'schema', 'identity', 'ordering', 'custody', 'budget', 'unsafe_path',
     'changed_member', 'oversize', 'missing_member', 'unknown_member', 'unavailable_context',
 )
+
+
+# Intrinsic public-manifest grammar only; no bundle consistency or file proof.
+PUBLIC_MANIFEST_FIELDS = ('bundle_id', 'context_sha256', 'members', 'schema_version', 'total_bytes')
+PUBLIC_MANIFEST_SCALARS = (
+    ('bundle_id', 'uuid4'), ('context_sha256', 'sha256'),
+    ('schema_version', 's43-public-bundle-v1'), ('total_bytes', 'bounded_bundle_bytes'),
+)
+PUBLIC_MANIFEST_ENTRY_FIELDS = ('name', 'bytes', 'sha256', 'records')
+PUBLIC_MANIFEST_NAMES = (
+    'authority.jsonl', 'bindings.jsonl', 'context.json', 'observations.jsonl',
+    'physical.jsonl', 'progress.jsonl', 'result.json', 'transactions.jsonl',
+)
+PUBLIC_MANIFEST_MEMBER_LIMITS = {
+    'authority.jsonl': (524288, 128),
+    'bindings.jsonl': (131072, 64),
+    'context.json': (4096, 1),
+    'observations.jsonl': (131072, 32),
+    'physical.jsonl': (3145728, 1075),
+    'progress.jsonl': (65536, 64),
+    'result.json': (1024, 1),
+    'transactions.jsonl': (131072, 64),
+}
+PUBLIC_MANIFEST_TOTAL_BYTES_MAX = 4194304
+# Derived finite canonical grammar maximum, not a new manifest member policy.
+PUBLIC_MANIFEST_MAX_BYTES = 1251
+PUBLIC_MANIFEST_MAX_DEPTH = 3

@@ -2470,3 +2470,60 @@ preservation check locally. The eventual portable union is 183 (154 codec plus
 29 formal nodes); formal 29 remain unimplemented and native 89 unchanged.
 Independent source review, complete PR/main CI and current-main compatibility
 remain publication gates. No actual reader, CLI or native execution is added.
+
+
+## Portable intrinsic public-manifest grammar codec
+
+This six-file slice implements only encode_public_manifest_record and
+decode_public_manifest_record. Both require a nonnull canonical expected bundle
+UUID4 before examining input, compare it after intrinsic/canonical validation,
+and convey caller-supplied equality rather than trusted origin.
+
+The closed five-field manifest contains eight closed entries, exactly once in
+ASCII name order: authority.jsonl, bindings.jsonl, context.json,
+observations.jsonl, physical.jsonl, progress.jsonl, result.json,
+transactions.jsonl. Exact built-in containers/scalars are required; nonnegative
+integer claims obey the unchanged per-name byte/record maxima and total_bytes
+0..4194304. No sorting, normalization, implicit positivity or fabricated relation
+is performed. A successful decode returns fresh root/list/entry containers.
+
+The finite canonical grammar maximum is 1251 bytes at depth 3:
+147 root-prefix bytes + entry sizes (131,129,124,133,132,128,123,133)
++ 7 commas + 64 suffix bytes. This parser bound is derived from the existing
+closed schema; it does not introduce a general manifest member policy or replace
+the selected recovery manifest reservation of 4096 bytes. Independent literal
+minimum and maximum fixtures are frozen in tests. A maximum grammar claim may
+not describe a feasible aggregate bundle.
+
+Root/entry closed shape and wrong container types yield invalid_shape.
+Scalar/range, list cardinality and ordered member-name constraints yield
+invalid_value. Duplicate/escaped duplicate keys retain invalid_shape; malformed,
+oversize, excessive depth or noncanonical frames yield invalid_encoding.
+Floats/constants remain invalid_value; noncanonical integer -0 yields
+invalid_encoding. Root scalar checks precede member shape/scalars, all entry
+validation precedes the ordered-name relation, and intrinsic/canonical validity
+precedes wrong_subject. No new invalid_result relationship is introduced.
+
+This codec proves no actual files, byte/record counts, hashes, aggregate
+accounting, digest links, provenance, inspection, valid bundle or completed
+witness. Two design prerequisites remain unresolved: the exact total_bytes
+equality formula (eight payload files versus all nine serialized files), and
+whether root context_sha256 equals the context.json digest together with its
+precisely defined digest input. This slice treats them as separately bounded
+claims. Actual exporter/reader and bundle-consistency implementation remains
+blocked until those semantics receive explicit clarification and review.
+
+Existing all-nine-file accounting, independent aggregate caps, total 4MiB and
+2000ms reader limits, recovery reservations/profile allocations, public-only
+validated-byte digests, manifest self-hash exclusion, exact owned regular
+single-link/stable files, typed crosslinks, physical/progress/recovery and
+acceptance predicates remain mandatory external gates. Grammar parsing grants
+no live authority, signal, retry or deadline reset. No native execution or
+formal acceptance credit is claimed.
+
+Six new finite codec units extend the actual codec union from 154 to 160.
+All prior 154 nodes/helpers/imports remain unchanged. Formal 29 portable nodes
+remain unimplemented; eventual portable union is 189, with native 89 unchanged.
+Affected validation collects exactly 160 IDs and runs six new units plus the
+source-preservation check. Full PR/main workflow checks and independent review
+remain publication gates.
