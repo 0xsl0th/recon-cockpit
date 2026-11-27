@@ -14,6 +14,239 @@ GATES = json.loads((ROOT / 'docs/stage4-engagement-live-gates.json').read_text()
 _ACCEPTED_MANIFEST_SHA256 = '3a2ae8d0150fbf6f44ca2630508fc7f4199844df9805ffba39a39b62df637e54'
 _MAIN_SYNC_PATH = 'docs/stage4-engagement-live-main-sync-20261116.json'
 _MAIN_SYNC_SHA256 = '7d9c537c03b4624c8a77ee50ec1e0922a128fe973deaccc56632257c880bc446'
+_LOCK_PROBE_AMENDMENT = {'path': 'tests/test_secure_engagement_dispatch_store.py',
+ 'mode': '100644',
+ 'scope_sha256': 'e32c67303a824c21236145bff3ea8fa0a97509f6328274e602af16198fc525cc',
+ 'before': {'bytes': 52977,
+            'sha256': '88bc6177831716174801f655c36c1e36c241ee4267eb1742cd4b16318d5fa1b4',
+            'git_blob': 'd912f57d956d2f6c29a26af15c440089935b5a61'},
+ 'after': {'bytes': 57091,
+           'sha256': 'e8256dfdbd56a16e84302e5cdd6dbff56df6cc6a7fb29c63247b499cdbd06bbd',
+           'git_blob': '4cb52f74309ad688aaaa0069355508bfeafadc05'},
+ 'replacements': [{'before_text': 'from pathlib import Path\nimport sqlite3\n',
+                   'after_text': 'from pathlib import Path\nimport select\nimport sqlite3\n'},
+                  {'before_text': 'def test_preserves_real_external_sqlite_lock(store,tmp_path):\n'
+                                  '    from '
+                                  'recon_cockpit.secure_agent.engagement_dispatch_inspection '
+                                  'import inspect_export,read_roe_file\n'
+                                  '    from recon_cockpit.secure_agent.engagement_store import '
+                                  'EngagementStore\n'
+                                  '    from recon_cockpit.secure_agent.engagement_contract import '
+                                  'EngagementError\n'
+                                  '    script="""\n'
+                                  'import sqlite3,sys\n'
+                                  'c=sqlite3.connect(sys.argv[1],timeout=.05,isolation_level=None)\n'
+                                  'try:\n'
+                                  " c.execute('BEGIN IMMEDIATE')\n"
+                                  'except sqlite3.OperationalError as e:\n'
+                                  ' assert e.sqlite_errorcode==sqlite3.SQLITE_BUSY\n'
+                                  " print('blocked')\n"
+                                  'else:\n'
+                                  " print('acquired');c.rollback()\n"
+                                  'finally:c.close()\n'
+                                  '"""\n'
+                                  '    parent=tmp_path/"v1_parent";parent.mkdir(mode=0o700)\n'
+                                  '    with '
+                                  'EngagementStore.create(parent/"store",engagement_id=uid(),roe=ROE,event_id=uid()) '
+                                  'as v1:\n'
+                                  '        for active,own_class,foreign_class,foreign_error in '
+                                  '((store,DispatchLedger,EngagementStore,EngagementError),\n'
+                                  '                '
+                                  '(v1,EngagementStore,DispatchLedger,DispatchLedgerError)):\n'
+                                  '            path=active.directory/module.DATABASE\n'
+                                  '            def probe():\n'
+                                  '                '
+                                  'r=subprocess.run([sys.executable,"-c",script,str(path)],capture_output=True,text=True,timeout=10)\n'
+                                  '                assert r.returncode==0 and not r.stderr\n'
+                                  '                return r.stdout.strip()\n'
+                                  '            other=own_class.open(active.directory)\n'
+                                  '            try:\n'
+                                  '                with active._transaction(write=True):\n'
+                                  '                    assert probe()=="blocked"\n'
+                                  '                    other.close();assert probe()=="blocked"\n'
+                                  '                    for reader in '
+                                  '(read_roe_file,inspect_export):\n'
+                                  '                        with '
+                                  'pytest.raises(DispatchLedgerError):reader(path)\n'
+                                  '                        assert probe()=="blocked"\n'
+                                  '                    with '
+                                  'pytest.raises(foreign_error):foreign_class.open(active.directory)\n'
+                                  '                    assert probe()=="blocked"\n'
+                                  '                assert probe()=="acquired"\n'
+                                  '            finally:other.close()\n',
+                   'after_text': '_LOCK_PROBE_SCRIPT = """\n'
+                                 'import sqlite3,sys\n'
+                                 "print('ready',flush=True)\n"
+                                 "assert sys.stdin.buffer.read(2)==b'G'\n"
+                                 'c=sqlite3.connect(sys.argv[1],timeout=.05,isolation_level=None)\n'
+                                 'try:\n'
+                                 " c.execute('BEGIN IMMEDIATE')\n"
+                                 'except sqlite3.OperationalError as e:\n'
+                                 ' assert e.sqlite_errorcode==sqlite3.SQLITE_BUSY\n'
+                                 " result='blocked'\n"
+                                 'else:\n'
+                                 " c.rollback();result='acquired'\n"
+                                 'finally:c.close()\n'
+                                 'print(result,flush=True)\n'
+                                 '"""\n'
+                                 '\n'
+                                 '\n'
+                                 'def _read_lock_probe_ready(process, deadline):\n'
+                                 '    ready = b""\n'
+                                 '    while len(ready) < 6:\n'
+                                 '        remaining = deadline - time.monotonic()\n'
+                                 '        if remaining <= 0 or not select.select([process.stdout], '
+                                 '[], [], remaining)[0]:\n'
+                                 '            raise TimeoutError("lock probe readiness timed '
+                                 'out")\n'
+                                 '        chunk = os.read(process.stdout.fileno(), 7 - '
+                                 'len(ready))\n'
+                                 '        assert chunk, "lock probe EOF before readiness"\n'
+                                 '        ready += chunk\n'
+                                 '    assert ready == b"ready\\n", "malformed lock probe '
+                                 'readiness"\n'
+                                 '\n'
+                                 '\n'
+                                 'def _finish_lock_probe(process):\n'
+                                 '    deadline = time.monotonic() + 10\n'
+                                 '    assert process.stdin.write(b"G") == 1\n'
+                                 '    process.stdin.close()\n'
+                                 '    pending = {process.stdout: (32, bytearray()), '
+                                 'process.stderr: (4096, bytearray())}\n'
+                                 '    outputs = {stream: data for stream, (_, data) in '
+                                 'pending.items()}\n'
+                                 '    while pending:\n'
+                                 '        remaining = deadline - time.monotonic()\n'
+                                 '        if remaining <= 0:\n'
+                                 '            raise TimeoutError("lock probe response timed out")\n'
+                                 '        readable = select.select(list(pending), [], [], '
+                                 'remaining)[0]\n'
+                                 '        if not readable:\n'
+                                 '            raise TimeoutError("lock probe response timed out")\n'
+                                 '        for stream in readable:\n'
+                                 '            limit, data = pending[stream]\n'
+                                 '            chunk = os.read(stream.fileno(), limit + 1 - '
+                                 'len(data))\n'
+                                 '            if not chunk:\n'
+                                 '                del pending[stream]\n'
+                                 '            else:\n'
+                                 '                data.extend(chunk)\n'
+                                 '                assert len(data) <= limit, "oversized lock probe '
+                                 'output"\n'
+                                 '    remaining = deadline - time.monotonic()\n'
+                                 '    if remaining <= 0:\n'
+                                 '        raise TimeoutError("lock probe exit timed out")\n'
+                                 '    assert process.wait(timeout=remaining) == 0, "nonzero lock '
+                                 'probe exit"\n'
+                                 '    assert not outputs[process.stderr], "unexpected lock probe '
+                                 'stderr"\n'
+                                 '    result = bytes(outputs[process.stdout])\n'
+                                 '    assert result in (b"blocked\\n", b"acquired\\n"), '
+                                 '"unexpected lock probe response"\n'
+                                 '    return result.decode().rstrip("\\n")\n'
+                                 '\n'
+                                 '\n'
+                                 '@contextmanager\n'
+                                 'def _prestarted_external_lock_probes(path):\n'
+                                 '    processes = []\n'
+                                 '    failure = None\n'
+                                 '    cleanup_failures = []\n'
+                                 '    try:\n'
+                                 '        deadline = time.monotonic() + 10\n'
+                                 '        for _ in range(6):\n'
+                                 '            process = subprocess.Popen(\n'
+                                 '                [sys.executable, "-c", _LOCK_PROBE_SCRIPT, '
+                                 'str(path)],\n'
+                                 '                stdin=subprocess.PIPE, stdout=subprocess.PIPE, '
+                                 'stderr=subprocess.PIPE,\n'
+                                 '                close_fds=True, bufsize=0)\n'
+                                 '            processes.append(process)\n'
+                                 '            _read_lock_probe_ready(process, deadline)\n'
+                                 '        consumed = 0\n'
+                                 '\n'
+                                 '        def probe():\n'
+                                 '            nonlocal consumed\n'
+                                 '            assert consumed < len(processes), "too many lock '
+                                 'probes"\n'
+                                 '            process = processes[consumed]\n'
+                                 '            consumed += 1\n'
+                                 '            return _finish_lock_probe(process)\n'
+                                 '\n'
+                                 '        yield probe\n'
+                                 '        assert consumed == 6, "unconsumed lock probes"\n'
+                                 '    except BaseException as exc:\n'
+                                 '        failure = exc\n'
+                                 '    finally:\n'
+                                 '        for process in processes:\n'
+                                 '            try:\n'
+                                 '                if process.poll() is None:\n'
+                                 '                    process.terminate()\n'
+                                 '            except BaseException as exc:\n'
+                                 '                cleanup_failures.append(exc)\n'
+                                 '            try:\n'
+                                 '                process.wait(timeout=2)\n'
+                                 '            except subprocess.TimeoutExpired:\n'
+                                 '                pass  # Escalate only this owned child to kill, '
+                                 'then reap below.\n'
+                                 '            except BaseException as exc:\n'
+                                 '                cleanup_failures.append(exc)\n'
+                                 '            if process.returncode is None:\n'
+                                 '                try:\n'
+                                 '                    process.kill()\n'
+                                 '                except BaseException as exc:\n'
+                                 '                    cleanup_failures.append(exc)\n'
+                                 '                try:\n'
+                                 '                    process.wait(timeout=2)\n'
+                                 '                except BaseException as exc:\n'
+                                 '                    cleanup_failures.append(exc)\n'
+                                 '            for stream in (process.stdin, process.stdout, '
+                                 'process.stderr):\n'
+                                 '                try:\n'
+                                 '                    stream.close()\n'
+                                 '                except BaseException as exc:\n'
+                                 '                    cleanup_failures.append(exc)\n'
+                                 '    if cleanup_failures:\n'
+                                 '        raise BaseExceptionGroup("lock probe cleanup failed",\n'
+                                 '                                 ([failure] if failure is not '
+                                 'None else []) + cleanup_failures)\n'
+                                 '    if failure is not None:\n'
+                                 '        raise failure\n'
+                                 '\n'
+                                 '\n'
+                                 'def test_preserves_real_external_sqlite_lock(store,tmp_path):\n'
+                                 '    from '
+                                 'recon_cockpit.secure_agent.engagement_dispatch_inspection import '
+                                 'inspect_export,read_roe_file\n'
+                                 '    from recon_cockpit.secure_agent.engagement_store import '
+                                 'EngagementStore\n'
+                                 '    from recon_cockpit.secure_agent.engagement_contract import '
+                                 'EngagementError\n'
+                                 '    parent=tmp_path/"v1_parent";parent.mkdir(mode=0o700)\n'
+                                 '    with '
+                                 'EngagementStore.create(parent/"store",engagement_id=uid(),roe=ROE,event_id=uid()) '
+                                 'as v1:\n'
+                                 '        for active,own_class,foreign_class,foreign_error in '
+                                 '((store,DispatchLedger,EngagementStore,EngagementError),\n'
+                                 '                '
+                                 '(v1,EngagementStore,DispatchLedger,DispatchLedgerError)):\n'
+                                 '            path=active.directory/module.DATABASE\n'
+                                 '            with _prestarted_external_lock_probes(path) as '
+                                 'probe:\n'
+                                 '                other=own_class.open(active.directory)\n'
+                                 '                try:\n'
+                                 '                    with active._transaction(write=True):\n'
+                                 '                        assert probe()=="blocked"\n'
+                                 '                        other.close();assert probe()=="blocked"\n'
+                                 '                        for reader in '
+                                 '(read_roe_file,inspect_export):\n'
+                                 '                            with '
+                                 'pytest.raises(DispatchLedgerError):reader(path)\n'
+                                 '                            assert probe()=="blocked"\n'
+                                 '                        with '
+                                 'pytest.raises(foreign_error):foreign_class.open(active.directory)\n'
+                                 '                        assert probe()=="blocked"\n'
+                                 '                    assert probe()=="acquired"\n'
+                                 '                finally:other.close()\n'}]}
 _APPROVED_SOURCE_CHANGES = {'pyproject.toml': {'after_bytes': 745,
                     'after_git_blob': '3f2135c18703c6d8b8ffdb5dcce600c612839a2f',
                     'after_sha256': '3989fe11357acb3144ea7c5e0dc87aebe970e325f32e1a9fbbb1f82954574832',
@@ -201,10 +434,14 @@ def test_exact_accepted_source_and_change_allowlist():
     fixture_guard = sync['approval_failure_dispatch_guard_change']
     assert fixture_guard['path'] == dispatch_change['path']
     assert fixture_guard['before'] == dispatch_change['after']
+    lock_change = _LOCK_PROBE_AMENDMENT
+    assert lock_change['path'] == 'tests/test_secure_engagement_dispatch_store.py'
+    assert lock_change['path'] not in status | changes.keys() | refreshed.keys() | {fixture_change['path']}
     checked = 0
     amended = set()
     refreshed_checked = set()
     fixture_checked = set()
+    lock_fixture_checked = set()
     for row in baseline:
         path = ROOT / row['path']
         info = path.lstat()
@@ -225,21 +462,27 @@ def test_exact_accepted_source_and_change_allowlist():
                 assert fixture_change['before']['git_blob'] == row['git_blob']
                 raw = _restore_fixture_change(raw, row['mode'], fixture_change)
                 fixture_checked.add(row['path'])
+            if row['path'] == lock_change['path']:
+                assert lock_change['before']['sha256'] == row['sha256']
+                assert lock_change['before']['git_blob'] == row['git_blob']
+                raw = _restore_fixture_change(raw, row['mode'], lock_change)
+                lock_fixture_checked.add(row['path'])
             if row['path'] == dispatch_change['path']:
                 raw = _restore_fixture_change(raw, row['mode'], fixture_guard)
                 raw = _restore_main_sync_dispatch(raw, row['mode'], dispatch_change)
             if row['path'] in changes:
                 raw = _restore_approved_source_change(raw, row['mode'], changes[row['path']])
                 amended.add(row['path'])
-            elif row['path'] not in fixture_checked:
+            elif row['path'] not in fixture_checked | lock_fixture_checked:
                 checked += 1
             assert hashlib.sha256(raw).hexdigest() == row['sha256'], row['path']
             assert hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() == row['git_blob']
-    assert checked == 1085 and amended == set(_APPROVED_SOURCE_CHANGES)
+    assert checked == 1084 and amended == set(_APPROVED_SOURCE_CHANGES)
     assert refreshed_checked == refreshed.keys()
     assert fixture_checked == {fixture_change['path']}
-    assert checked + len(refreshed_checked) + len(fixture_checked) == 1090
-    assert sync['source_accounting']['unchanged_nonstatus_files'] == checked
+    assert lock_fixture_checked == {lock_change['path']}
+    assert checked + len(lock_fixture_checked) + len(refreshed_checked) + len(fixture_checked) == 1090
+    assert sync['source_accounting']['unchanged_nonstatus_files'] == checked + len(lock_fixture_checked)
     assert sync['source_accounting']['approved_portable_fixture_changes'] == len(fixture_checked)
     backup = sync['upstream_readme_backup']
     original = next(row for row in baseline if row['path'] == backup['original_baseline_path'])

@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import os
 from pathlib import Path
+import select
 import sqlite3
 import subprocess
 import sys
@@ -688,43 +689,149 @@ def test_rejects_reopened_and_inherited_owners(store):
     finally:store._pid,store._lock,store._db=originals
 
 
-def test_preserves_real_external_sqlite_lock(store,tmp_path):
-    from recon_cockpit.secure_agent.engagement_dispatch_inspection import inspect_export,read_roe_file
-    from recon_cockpit.secure_agent.engagement_store import EngagementStore
-    from recon_cockpit.secure_agent.engagement_contract import EngagementError
-    script="""
+_LOCK_PROBE_SCRIPT = """
 import sqlite3,sys
+print('ready',flush=True)
+assert sys.stdin.buffer.read(2)==b'G'
 c=sqlite3.connect(sys.argv[1],timeout=.05,isolation_level=None)
 try:
  c.execute('BEGIN IMMEDIATE')
 except sqlite3.OperationalError as e:
  assert e.sqlite_errorcode==sqlite3.SQLITE_BUSY
- print('blocked')
+ result='blocked'
 else:
- print('acquired');c.rollback()
+ c.rollback();result='acquired'
 finally:c.close()
+print(result,flush=True)
 """
+
+
+def _read_lock_probe_ready(process, deadline):
+    ready = b""
+    while len(ready) < 6:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not select.select([process.stdout], [], [], remaining)[0]:
+            raise TimeoutError("lock probe readiness timed out")
+        chunk = os.read(process.stdout.fileno(), 7 - len(ready))
+        assert chunk, "lock probe EOF before readiness"
+        ready += chunk
+    assert ready == b"ready\n", "malformed lock probe readiness"
+
+
+def _finish_lock_probe(process):
+    deadline = time.monotonic() + 10
+    assert process.stdin.write(b"G") == 1
+    process.stdin.close()
+    pending = {process.stdout: (32, bytearray()), process.stderr: (4096, bytearray())}
+    outputs = {stream: data for stream, (_, data) in pending.items()}
+    while pending:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("lock probe response timed out")
+        readable = select.select(list(pending), [], [], remaining)[0]
+        if not readable:
+            raise TimeoutError("lock probe response timed out")
+        for stream in readable:
+            limit, data = pending[stream]
+            chunk = os.read(stream.fileno(), limit + 1 - len(data))
+            if not chunk:
+                del pending[stream]
+            else:
+                data.extend(chunk)
+                assert len(data) <= limit, "oversized lock probe output"
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("lock probe exit timed out")
+    assert process.wait(timeout=remaining) == 0, "nonzero lock probe exit"
+    assert not outputs[process.stderr], "unexpected lock probe stderr"
+    result = bytes(outputs[process.stdout])
+    assert result in (b"blocked\n", b"acquired\n"), "unexpected lock probe response"
+    return result.decode().rstrip("\n")
+
+
+@contextmanager
+def _prestarted_external_lock_probes(path):
+    processes = []
+    failure = None
+    cleanup_failures = []
+    try:
+        deadline = time.monotonic() + 10
+        for _ in range(6):
+            process = subprocess.Popen(
+                [sys.executable, "-c", _LOCK_PROBE_SCRIPT, str(path)],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                close_fds=True, bufsize=0)
+            processes.append(process)
+            _read_lock_probe_ready(process, deadline)
+        consumed = 0
+
+        def probe():
+            nonlocal consumed
+            assert consumed < len(processes), "too many lock probes"
+            process = processes[consumed]
+            consumed += 1
+            return _finish_lock_probe(process)
+
+        yield probe
+        assert consumed == 6, "unconsumed lock probes"
+    except BaseException as exc:
+        failure = exc
+    finally:
+        for process in processes:
+            try:
+                if process.poll() is None:
+                    process.terminate()
+            except BaseException as exc:
+                cleanup_failures.append(exc)
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass  # Escalate only this owned child to kill, then reap below.
+            except BaseException as exc:
+                cleanup_failures.append(exc)
+            if process.returncode is None:
+                try:
+                    process.kill()
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+                try:
+                    process.wait(timeout=2)
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+            for stream in (process.stdin, process.stdout, process.stderr):
+                try:
+                    stream.close()
+                except BaseException as exc:
+                    cleanup_failures.append(exc)
+    if cleanup_failures:
+        raise BaseExceptionGroup("lock probe cleanup failed",
+                                 ([failure] if failure is not None else []) + cleanup_failures)
+    if failure is not None:
+        raise failure
+
+
+def test_preserves_real_external_sqlite_lock(store,tmp_path):
+    from recon_cockpit.secure_agent.engagement_dispatch_inspection import inspect_export,read_roe_file
+    from recon_cockpit.secure_agent.engagement_store import EngagementStore
+    from recon_cockpit.secure_agent.engagement_contract import EngagementError
     parent=tmp_path/"v1_parent";parent.mkdir(mode=0o700)
     with EngagementStore.create(parent/"store",engagement_id=uid(),roe=ROE,event_id=uid()) as v1:
         for active,own_class,foreign_class,foreign_error in ((store,DispatchLedger,EngagementStore,EngagementError),
                 (v1,EngagementStore,DispatchLedger,DispatchLedgerError)):
             path=active.directory/module.DATABASE
-            def probe():
-                r=subprocess.run([sys.executable,"-c",script,str(path)],capture_output=True,text=True,timeout=10)
-                assert r.returncode==0 and not r.stderr
-                return r.stdout.strip()
-            other=own_class.open(active.directory)
-            try:
-                with active._transaction(write=True):
-                    assert probe()=="blocked"
-                    other.close();assert probe()=="blocked"
-                    for reader in (read_roe_file,inspect_export):
-                        with pytest.raises(DispatchLedgerError):reader(path)
+            with _prestarted_external_lock_probes(path) as probe:
+                other=own_class.open(active.directory)
+                try:
+                    with active._transaction(write=True):
                         assert probe()=="blocked"
-                    with pytest.raises(foreign_error):foreign_class.open(active.directory)
-                    assert probe()=="blocked"
-                assert probe()=="acquired"
-            finally:other.close()
+                        other.close();assert probe()=="blocked"
+                        for reader in (read_roe_file,inspect_export):
+                            with pytest.raises(DispatchLedgerError):reader(path)
+                            assert probe()=="blocked"
+                        with pytest.raises(foreign_error):foreign_class.open(active.directory)
+                        assert probe()=="blocked"
+                    assert probe()=="acquired"
+                finally:other.close()
 
 
 def test_enforces_private_file_custody(tmp_path):
