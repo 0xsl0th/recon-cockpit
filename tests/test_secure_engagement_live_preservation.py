@@ -253,8 +253,8 @@ def test_exact_accepted_source_and_change_allowlist():
     assert len(sync_additions) == 2 and not sync_additions & _new_paths()
     # Admit only the reviewed S4.3 design documents; historical checks stay intact.
     s43_documents = {
-        'docs/stage4-synthetic-custody.md': 'cc10cb881406aa60f1537b4456cd2056f24202e3b10c0fe380d606d1394cddbf',
-        'docs/stage4-synthetic-custody-gates.json': 'ea95c23940004108f9b69b2a3544b267edcf9e4b5972dd3c477f1d2579a23451',
+        'docs/stage4-synthetic-custody.md': 'd0ae2ea985ad8558b52dee187f4ba028595e384e41346ae8d54a5d9899118936',
+        'docs/stage4-synthetic-custody-gates.json': '13e92ba96346996d7a6f2bebd32318cc3acfa5df506f43842ed2737496ca738f',
     }
     for name, expected_sha256 in s43_documents.items():
         path = ROOT / name
