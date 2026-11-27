@@ -1,4 +1,4 @@
-"""One hundred sixty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred sixty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -8563,3 +8563,147 @@ def test_public_manifest_record_encoding_and_depth():
     record = _pm_record()
     record['members'][0]['records'] = []
     _pm_reject(record, 'invalid_value', 'invalid_encoding')
+
+
+def test_public_manifest_claims_consistent_examples():
+    # Hypothetical claims only: no member bytes or actual digests are supplied.
+    vectors = (
+        ((0, 0, 0, 0, 0, 0, 0, 0), 0),
+        ((1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000), 8000),
+        ((0, 0, 0, 0, 9999, 0, 0, 0), 9999),
+        ((0, 0, 0, 0, 10000, 0, 0, 0), 10000),
+        ((524288, 131072, 4096, 131072, 3145728, 65536, 1024, 131072), 4133888),
+    )
+    for sizes, total in vectors:
+        record = _pm_record()
+        for entry, size in zip(record['members'], sizes):
+            entry['bytes'] = size
+        record['total_bytes'] = total
+        frame = _wire(record)
+        first = codec.decode_public_manifest_claims(frame, SUBJECT)
+        second = codec.decode_public_manifest_claims(frame, SUBJECT)
+        assert first == second == record and first is not second
+        assert first['members'] is not second['members']
+        for a, b in zip(first['members'], second['members']):
+            assert a is not b
+        first['members'][0]['bytes'] = -1
+        first['members'].pop()
+        assert second == record and _wire(record) == frame
+        reordered = dict(reversed(tuple(record.items())))
+        reordered['members'] = [dict(reversed(tuple(e.items()))) for e in record['members']]
+        assert codec.decode_public_manifest_claims(_wire(reordered), SUBJECT) == record
+    maximum = _pm_record(True)
+    assert codec.decode_public_manifest_record(PM_MAXIMUM_BYTES, maximum['bundle_id']) == maximum
+    _reject(lambda: codec.decode_public_manifest_claims(PM_MAXIMUM_BYTES, maximum['bundle_id']),
+            'invalid_result')
+    maximum['total_bytes'] = 4133888
+    assert codec.decode_public_manifest_claims(_wire(maximum), maximum['bundle_id']) == maximum
+    assert codec.decode_public_manifest_claims(PM_MINIMUM_BYTES, SUBJECT) == _pm_record()
+
+
+def test_public_manifest_claims_payload_totals():
+    record = _pm_record()
+    for entry in record['members']:
+        entry['bytes'] = 1000
+    record['total_bytes'] = 8000
+    for total in (0, 7999, 8001, 4194304):
+        wrong = dict(record, total_bytes=total)
+        _reject(lambda: codec.decode_public_manifest_claims(_wire(wrong), SUBJECT), 'invalid_result')
+        assert codec.decode_public_manifest_record(_wire(wrong), SUBJECT) == wrong
+    for index in range(8):
+        for change in (-1, 1):
+            changed = json.loads(_wire(record))
+            changed['members'][index]['bytes'] += change
+            _reject(lambda: codec.decode_public_manifest_claims(_wire(changed), SUBJECT),
+                    'invalid_result')
+            changed['total_bytes'] = 8000 + change
+            # Agreeing false sizes pass this precheck, not actual file validation.
+            assert codec.decode_public_manifest_claims(_wire(changed), SUBJECT) == changed
+    for entry, (_, _, limit) in zip(record['members'], PM_ROWS):
+        entry['records'] = limit
+        if entry['name'] != 'context.json':
+            entry['sha256'] = 'b' * 64
+    assert codec.decode_public_manifest_claims(_wire(record), SUBJECT) == record
+    record['members'][0]['records'] = 0
+    assert codec.decode_public_manifest_claims(_wire(record), SUBJECT) == record
+
+
+def test_public_manifest_claims_context_digest_relation():
+    for digest in ('0' * 64, 'b' * 64, 'f' * 64):
+        for changed in ('outer', 'context'):
+            record = _pm_record()
+            if changed == 'outer':
+                record['context_sha256'] = digest
+            else:
+                record['members'][2]['sha256'] = digest
+            # Agreement with another member never substitutes for context.json.
+            record['members'][0]['sha256'] = record['context_sha256']
+            _reject(lambda: codec.decode_public_manifest_claims(_wire(record), SUBJECT),
+                    'invalid_result')
+            assert codec.decode_public_manifest_record(_wire(record), SUBJECT) == record
+        record = _pm_record()
+        record['context_sha256'] = record['members'][2]['sha256'] = digest
+        assert codec.decode_public_manifest_claims(_wire(record), SUBJECT) == record
+        for index in (0, 1, 3, 4, 5, 6, 7):
+            record['members'][index]['sha256'] = digest
+            assert codec.decode_public_manifest_claims(_wire(record), SUBJECT) == record
+    # No hashing occurred: these matching digest claims need not describe a file.
+
+
+def test_public_manifest_claims_validation_precedence():
+    inconsistent = dict(_pm_record(), total_bytes=1, context_sha256='b' * 64)
+    frame = _wire(inconsistent)
+    for expected, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                           ('', 'invalid_value'), (SUBJECT.upper(), 'invalid_value')):
+        _reject(lambda: codec.decode_public_manifest_claims(frame, expected), code)
+        _reject(lambda: codec.decode_public_manifest_claims(b'', expected), code)
+    _reject(lambda: codec.decode_public_manifest_claims(frame, OTHER), 'wrong_subject')
+    _reject(lambda: codec.decode_public_manifest_claims(frame, SUBJECT), 'invalid_result')
+    bad_frames = (
+        (None, 'invalid_shape'), (bytearray(frame), 'invalid_shape'),
+        (b'', 'invalid_encoding'), (b'{', 'invalid_encoding'),
+        (b'x' * 1252, 'invalid_encoding'), (frame + b'\n', 'invalid_encoding'),
+        (b'{"bundle_id":null,' + frame[1:], 'invalid_shape'),
+    )
+    for value, code in bad_frames:
+        for expected in (SUBJECT, OTHER):
+            error = _reject(lambda: codec.decode_public_manifest_claims(value, expected), code)
+            assert error.__cause__ is None and error.__context__ is None
+    for mutation, code in (
+            ('missing_field', 'invalid_shape'), ('wrong_members_type', 'invalid_shape'),
+            ('name', 'invalid_value'), ('order', 'invalid_value'),
+            ('byte_range', 'invalid_value'), ('byte_type', 'invalid_value')):
+        record = json.loads(frame)
+        if mutation == 'missing_field':
+            del record['members'][0]['records']
+        elif mutation == 'wrong_members_type':
+            record['members'] = {}
+        elif mutation == 'name':
+            record['members'][0]['name'] = 'manifest.json'
+        elif mutation == 'order':
+            record['members'][0], record['members'][1] = record['members'][1], record['members'][0]
+        elif mutation == 'byte_range':
+            record['members'][0]['bytes'] = 524289
+        else:
+            record['members'][0]['bytes'] = True
+        for expected in (SUBJECT, OTHER):
+            _reject(lambda: codec.decode_public_manifest_claims(_wire(record), expected), code)
+    calls = []
+    returned = []
+    original = codec.decode_public_manifest_record
+    def observed(value, expected):
+        calls.append((value, expected))
+        result = original(value, expected)
+        returned.append(result)
+        return result
+    codec.decode_public_manifest_record = observed
+    try:
+        accepted = codec.decode_public_manifest_claims(PM_MINIMUM_BYTES, SUBJECT)
+        assert len(calls) == 1 and calls[0][0] is PM_MINIMUM_BYTES and calls[0][1] is SUBJECT
+        assert len(returned) == 1 and accepted is returned[0]
+        _reject(lambda: codec.decode_public_manifest_claims(b'{', SUBJECT), 'invalid_encoding')
+        assert len(calls) == 2 and len(returned) == 1
+        _reject(lambda: codec.decode_public_manifest_claims(frame, SUBJECT), 'invalid_result')
+        assert len(calls) == 3 and len(returned) == 2
+    finally:
+        codec.decode_public_manifest_record = original

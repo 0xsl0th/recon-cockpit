@@ -2648,3 +2648,40 @@ remain unchanged. A separately reviewed implementation scope and all existing
 publication, execution and acceptance gates are still required before any
 exporter, reader, bundle-consistency implementation or native work. Existing
 160 codec units, formal 29, eventual portable union 189 and native 89 are unchanged.
+
+
+## Portable manifest claim relations
+
+The separately reviewed `decode_public_manifest_claims(frame, expected_bundle_id)`
+adds an early-refusal check after the unchanged intrinsic manifest decoder.
+It delegates exactly once, then requires total_bytes to equal the sum of all
+eight entry byte claims, followed by equality between context_sha256 and the
+unique context.json entry's sha256. Either mismatch yields invalid_result.
+Existing expected-ID, grammar, canonical-encoding and wrong_subject errors
+precede these relations. The fresh decoded record is returned unchanged.
+
+The original encoder/decoder remain grammar-only; their historical fixtures
+and behavior are preserved. No encoder, import, constant, schema or cap changes.
+The new API accepts only manifest bytes, never actual member/context buffers.
+Mutually agreeing false sizes/hashes and zero claims can pass this precheck.
+It proves no actual lengths/counts, validated SHA256 input, digest-to-file
+equality, independent all-nine aggregate, owned stable files, provenance,
+typed crosslinks, valid bundle, completed witness, inspection or acceptance.
+Claims never authorize reads, allocation or acceptance.
+
+PR135's full requirements remain independent: each entry.bytes must equal its
+actual validated file length, total_bytes must equal their sum, and all nine
+serialized files including manifest.json must independently fit 4194304 bytes.
+The context digest must match SHA256 of exact validated canonical context bytes
+without prefixes, suffixes or normalization. No hashing or file access occurs
+here. The 2000ms reader limit, every member/record cap, recovery manifest4096
+and aggregate2909552 reservations, upstream identity/provenance, ownership,
+physical/progress/recovery and all other acceptance gates remain unchanged.
+
+The five-file amendment is pinned by portable_manifest_claims_slice. Four new
+finite units bring the actual codec union to164 and eventual portable union
+to193 (164+29); formal29 remain unimplemented and native89 unchanged. Affected
+validation collects exact164 IDs and runs only four new units plus preservation.
+All prior160 units/helpers remain unchanged. Independent source review and full
+PR/main CI remain publication gates. No actual reader/exporter/bundle checker,
+native execution, broader readiness or S4.3/S4.4 acceptance is established.
