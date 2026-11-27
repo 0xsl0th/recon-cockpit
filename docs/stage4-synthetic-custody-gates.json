@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "cc10cb881406aa60f1537b4456cd2056f24202e3b10c0fe380d606d1394cddbf",
+  "contract_sha256": "d0ae2ea985ad8558b52dee187f4ba028595e384e41346ae8d54a5d9899118936",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -7187,7 +7187,7 @@
       "Canonical ASCII JSON: sorted keys, no extra whitespace, exact integers/enums, duplicate/unknown fields rejected before hashing. JSONL records each end in one LF. Existing authority event-chain hash algorithm remains unchanged.",
       "Member digest is SHA256 of exactly emitted validated file bytes. Manifest excludes itself. No digest of unvalidated/raw private inputs; validation precedes publication and hashing.",
       "Receipt-set digest is SHA256 of ASCII s43-receipt-set-v1 followed by LF and sorted receipt_id plus colon plus canonical-record SHA256 plus LF for every exact set member. Graph manifest separately commits exact role instances and scopes; missing underlying records refuse.",
-      "Public context digests cover only separately validated fixed source/runtime manifests. Dynamic credential object bytes, request Authorization value and reflective data never enter hashes."
+      "The context record's public source/runtime identity digests continue to cover only separately validated fixed source/runtime manifests; graph_manifest_sha256 retains its existing separately validated graph-manifest identity and provenance. These upstream identities are not the current evidence manifest or context.json's own digest. The outer manifest.context_sha256 hashes the exact validated canonical context.json file bytes and equals that member digest. Dynamic credential object bytes, request Authorization values, reflective data and rejected/raw private inputs never enter either digest path."
     ],
     "implementation_authorized": false,
     "lookup_observed": {
@@ -7247,7 +7247,9 @@
         "total_bytes"
       ],
       "rules": [
-        "Exactly the eight named payload members once, sorted by ASCII name; no symlinks, hardlinks, extra files or self-hash. Each entry has exactly name, bytes, sha256 and records. Manifest is the ninth member."
+        "Exactly the eight named payload members once, sorted by ASCII name; no symlinks, hardlinks, extra files or self-hash. Each entry has exactly name, bytes, sha256 and records. Manifest is the ninth member.",
+        "manifest.total_bytes equals the sum of exact validated serialized bytes of the eight payload files and their individually verified entry.bytes claims; it excludes manifest.json. Independently enforce the all-nine aggregate including final canonical manifest bytes as specified by manifest_consistency.",
+        "manifest.context_sha256 equals the unique context.json entry.sha256 and SHA256 of the exact validated canonical context.json file bytes, with no prefix or suffix; retain independent upstream identity/provenance gates specified by manifest_consistency."
       ]
     },
     "max_bundle_bytes": 4194304,
@@ -7436,7 +7438,8 @@
       "For AUTH02/03/04 recovery profile only: Require selected AUTH node/profile, exact two broker instances and declared graph membership; absent display/probe/concurrent threads; all phases and slot unions obey profile. Do not fabricate snapshots of exited processes.",
       "For AUTH02/03/04 recovery profile only: Validate prepared->stopped before initial store-open, old durable cut and owner closure before continue/activation, actual continued wait before activation message, challenge before fresh binding and complete response before recovery SQL. Records needed for these order facts must be present; startup refusal cannot satisfy a late witness.",
       "For AUTH02/03/04 recovery profile only: Verify binding current consumer/session/epoch/runtime, same original supervisor incarnation and monitor session, original closure/member/death exact graph sets, birth pidfd identities, historical original timestamps and new evaluation after challenge. Reject session relabelling, copied authority references, missing deaths, wrong scope or inconsistent current terminal/root-copy predicates.",
-      "For AUTH02/03/04 recovery profile only: A failed or incomplete record sequence is retained with its actual failed/interrupted context and cannot satisfy recovery success. AUTH04 must link original exchange/completion and unchanged lookup output; AUTH02/03 preserve counters and old-grant refusal/uncertainty."
+      "For AUTH02/03/04 recovery profile only: A failed or incomplete record sequence is retained with its actual failed/interrupted context and cannot satisfy recovery success. AUTH04 must link original exchange/completion and unchanged lookup output; AUTH02/03 preserve counters and old-grant refusal/uncertainty.",
+      "Enforce manifest_consistency: verify each actual payload byte length and member digest, payload-only total_bytes equality, the context-file digest relation, and independently the complete all-nine byte aggregate including manifest.json. Claims never replace bounded owned/stable-file reads, trusted expected identities, resolved upstream provenance, unchanged reservations or any existing acceptance gate."
     ],
     "record_dispatch": {
       "binding": [
@@ -7703,6 +7706,155 @@
       "uuid_list_max11": "Unique UUID4 list, max11.",
       "uuid_list_max2": "Unique UUID4 list, max2.",
       "variant_id": "Exact variant for parent, <=64ASCII."
+    },
+    "manifest_consistency": {
+      "status": "design_specified_implementation_pending",
+      "scope_sha256": "5b6fa170afb7e25b9d3e76b5f09c94117e50426f01cb5431d966944a27998f1a",
+      "payload_total": {
+        "field": "manifest.total_bytes",
+        "definition": "P = sum(len(B_i)) for the exact validated serialized bytes of all eight payload files.",
+        "entry_relation": "Each entry.bytes equals the actual validated file length; total_bytes equals their sum. Agreement among claims alone is insufficient.",
+        "payload_member_count": 8,
+        "includes_manifest": false
+      },
+      "all_nine_aggregate": {
+        "definition": "A = P + len(M), where M is the final canonical manifest.json bytes with payload-only total_bytes.",
+        "maximum_bytes": 4194304,
+        "includes_manifest": true,
+        "independently_required": true,
+        "claims_authorize_reads_or_acceptance": false
+      },
+      "framing": {
+        "jsonl": "Each required record LF is counted.",
+        "singleton_json": "context.json, result.json and manifest.json use exact canonical ASCII object bytes without BOM, leading/trailing whitespace or LF.",
+        "excluded": "Filesystem allocation, external reader receipts and debug files are not serialized bundle bytes."
+      },
+      "context_digest": {
+        "relation": "manifest.context_sha256 = unique context.json entry.sha256 = SHA256(B_context).hexdigest()",
+        "input": "Exact validated canonical context.json file bytes.",
+        "prefix_bytes": 0,
+        "suffix_bytes": 0,
+        "normalize_rejected_input": false,
+        "digest_of_digest": false,
+        "upstream_manifest_substitution": false,
+        "emission": "Validate the closed public context record and its required identity/provenance bindings, serialize once, hash exactly emitted bytes.",
+        "inspection": "Require observed bytes already equal their validated canonical representation before hashing; reject noncanonical input."
+      },
+      "upstream_identity_distinction": {
+        "context_fields": [
+          "code_manifest_sha256",
+          "runtime_lock_sha256",
+          "graph_manifest_sha256"
+        ],
+        "rule": "Retain existing separately validated fixed source/runtime and graph-manifest identities/provenance. None is reinterpreted as the current evidence manifest or context.json own digest.",
+        "public_binding_record": "public_manifest_sha256 still resolves a separate frozen validated public input, not the current evidence manifest.",
+        "reader_receipts": "Evidence-manifest hash receipts remain outside the bundle.",
+        "trusted_expectations": "Expected case/bundle/node/variant and upstream resolution remain independent gates; rejected manifests and filenames cannot supply them.",
+        "private_input_ban": "No dynamic credential object bytes, request Authorization values, reflective data or rejected/raw private inputs enter either digest path."
+      },
+      "preserved_reservations": {
+        "recovery_manifest_bytes": 4096,
+        "recovery_aggregate_bytes": 2909552,
+        "actual_sizes_or_grammar_bound_replace_reservations": false
+      },
+      "current_upper_bound": {
+        "payload_member_byte_cap_sum": 4133888,
+        "manifest_grammar_max_bytes": 1251,
+        "all_nine_bytes": 4135139,
+        "margin_to_aggregate_cap": 59165,
+        "waives_aggregate_check": false
+      },
+      "design_examples": {
+        "bounded_size_examples": [
+          {
+            "name": "bounded_payload_sizes",
+            "payload_bytes": 8000,
+            "manifest_bytes": 1227,
+            "all_nine_bytes": 9227,
+            "per_member_byte_ceiling_satisfied": true,
+            "arithmetic_budget_satisfied": true,
+            "complete_bundle_validity_proved": false
+          },
+          {
+            "name": "payload_decimal_9999",
+            "payload_bytes": 9999,
+            "manifest_bytes": 1206,
+            "all_nine_bytes": 11205,
+            "per_member_byte_ceiling_satisfied": true,
+            "arithmetic_budget_satisfied": true,
+            "complete_bundle_validity_proved": false
+          },
+          {
+            "name": "payload_decimal_10000",
+            "payload_bytes": 10000,
+            "manifest_bytes": 1208,
+            "all_nine_bytes": 11208,
+            "per_member_byte_ceiling_satisfied": true,
+            "arithmetic_budget_satisfied": true,
+            "complete_bundle_validity_proved": false
+          },
+          {
+            "name": "member_cap_upper_bound",
+            "payload_bytes": 4133888,
+            "manifest_bytes": 1251,
+            "all_nine_bytes": 4135139,
+            "per_member_byte_ceiling_satisfied": true,
+            "arithmetic_budget_satisfied": true,
+            "complete_bundle_validity_proved": false
+          }
+        ],
+        "isolated_aggregate_boundary_examples": [
+          {
+            "payload_bytes": 4193053,
+            "manifest_bytes": 1251,
+            "aggregate_bytes": 4194304,
+            "aggregate_predicate": true,
+            "attainable_with_current_member_caps": false
+          },
+          {
+            "payload_bytes": 4193054,
+            "manifest_bytes": 1251,
+            "aggregate_bytes": 4194305,
+            "aggregate_predicate": false,
+            "attainable_with_current_member_caps": false
+          }
+        ],
+        "false_claims_example": {
+          "claimed_payload": 7999,
+          "actual_payload": 8000,
+          "entry_claims_agree_with_total": true,
+          "actual_member_sizes_match": false,
+          "expected_future_outcome": "refuse"
+        },
+        "wrong_total_example": {
+          "claimed_payload": 8001,
+          "entry_sum": 8000,
+          "expected_future_outcome": "refuse"
+        },
+        "context_example": {
+          "canonical_bytes": 609,
+          "sha256": "1c545ff21379ab29eff1ed48fa4ad3e57083f851347aae904936d7893edbad79",
+          "correct_outer_and_entry_digest": "1c545ff21379ab29eff1ed48fa4ad3e57083f851347aae904936d7893edbad79",
+          "false_matching_outer_and_entry_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "false_digest_matches_actual": false,
+          "noncanonical_variants_rejected_before_hash": 2,
+          "rejected_bytes_hashed": false,
+          "digest_match_without_upstream_provenance": "still refuse; independent prerequisite"
+        },
+        "evidence_kind": "Isolated arithmetic/framing/digest examples, not complete bundle/provenance/native acceptance."
+      },
+      "no_self_inclusive_total": {
+        "selected": false,
+        "reason": "Payload-only field avoids decimal-width fixed-point ambiguity; no placeholder total/padding/rounding/truncation or fixed-point solver.",
+        "alternative_example": "K=9995 admits9999and10000 under self-inclusive decimal-width arithmetic; not selected."
+      },
+      "implementation_authorized": false,
+      "exporter_implemented": false,
+      "reader_implemented": false,
+      "bundle_consistency_implemented": false,
+      "native_execution_authorized": false,
+      "acceptance_credit": false,
+      "remaining_gates": "Separate independently reviewed implementation scope plus unchanged member/record caps, bounded owned/stable reads, provenance, reader2000ms, profile reservations, all-nine4MiB and all existing acceptance gates. No new reason/status mapping or test-node reservation."
     }
   },
   "public_result": {

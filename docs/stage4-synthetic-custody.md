@@ -2527,3 +2527,124 @@ remain unimplemented; eventual portable union is 189, with native 89 unchanged.
 Affected validation collects exactly 160 IDs and runs six new units plus the
 source-preservation check. Full PR/main workflow checks and independent review
 remain publication gates.
+
+
+## Manifest accounting and context digest — design clarification
+
+This independently reviewed design-only amendment resolves the two definitions
+left open in the historical intrinsic-manifest codec note above. It specifies
+future consistency obligations; it does not implement them or change any
+intrinsic codec, schema, acceptance status, native prerequisite or reservation.
+The historical PR134 note and its implementation inventory remain unchanged.
+
+### Payload total and complete-bundle accounting
+
+For each of the eight fixed payload files, let B_i be its exact validated
+serialized bytes. Define P = sum(len(B_i)). Require both:
+
+- manifest.total_bytes = P = sum of the eight member-entry bytes claims;
+- each member-entry bytes claim equals that file's actual validated byte length.
+
+Let M be the final canonical manifest.json bytes containing that payload total.
+Independently require A = P + len(M) <= 4,194,304. This accounts for all nine
+files. The total_bytes field excludes manifest.json; the complete-bundle budget
+includes it. Agreement among untrusted totals/member claims is insufficient.
+Claims can justify early refusal but cannot authorize reads, allocation or
+acceptance without the existing per-member, stable-file and provenance checks.
+
+Count exact serialized bytes, not characters, filesystem allocation, normalized
+input or external receipts/debug files. Every JSONL record's required LF counts.
+Singleton context.json, result.json and manifest.json are exact canonical ASCII
+JSON object bytes without BOM, leading/trailing whitespace or a trailing LF.
+Manifest remains the ninth file and is not a payload entry or self-hash.
+
+The payload-only field avoids self-inclusive length equations. No fixed-point
+solver, placeholder total, padding, rounding or truncation is introduced.
+For comparison only, self-inclusive arithmetic can have two fixed points:
+K = 9995 permits both 9999 and 10000 when the serialized total's decimal width
+is added. That alternative was not selected.
+
+All existing per-member byte/record caps, independently enforced aggregate
+requirements, owned regular single-link/stable files, descriptor/directory
+checks and the 2000ms reader budget remain mandatory. Preserve the selected
+recovery manifest reservation of 4096 bytes and total reservation of 2909552
+bytes, with the existing per-file/profile allocations and reserved failure
+space. Exact emitted sizes and the intrinsic 1251-byte/depth3 grammar maximum
+do not replace or reduce reservations.
+
+The member-byte ceilings sum to 4,133,888. Adding the grammar maximum yields
+an upper bound of 4,135,139, which is 59,165 below 4 MiB. This bound does not
+waive the independent aggregate check. Exact 4 MiB boundary examples below are
+isolated arithmetic predicates, not bundles satisfying all current member caps.
+
+### Context-file digest and upstream identities
+
+Require this three-way equality:
+
+manifest.context_sha256 = the unique context.json entry's sha256
+= SHA256(exact validated canonical context.json bytes).hexdigest().
+
+The digest has no prefix, domain tag, extra LF, zero-byte suffix, normalization,
+digest-of-digest substitution or upstream-manifest substitution. For emission,
+validate the closed public context record and its required identity/provenance
+bindings, serialize it canonically once, and hash exactly the emitted bytes.
+For inspection, observed context bytes must already equal their validated
+canonical representation. Reject noncanonical input rather than normalizing it
+into an accepted identity. No rejected/raw private input is hashed to populate
+a successful identity or a failed inspection's null identity fields.
+
+The context record's code_manifest_sha256 and runtime_lock_sha256 retain their
+existing separately validated fixed source/runtime identities.
+graph_manifest_sha256 retains its existing separately validated graph-manifest
+identity and provenance. None is reinterpreted as the current evidence
+manifest or as context.json's own digest. The outer manifest's context_sha256
+is a distinct digest of the validated public context file. Dynamic credential
+object bytes, request Authorization values and reflective data remain excluded
+from either digest path.
+
+The closed context schema has no current evidence-manifest digest field.
+public_binding_record.public_manifest_sha256 still resolves a separate frozen,
+validated public input; it is not repurposed as the current evidence manifest.
+Reader receipts containing the evidence-manifest digest remain outside the
+bundle. These schema distinctions avoid introducing a back-reference; they do
+not establish actual upstream provenance. Trusted expected case/bundle/node/
+variant association and resolved upstream inputs remain independent gates;
+rejected manifest data and filenames never supply trusted expectations.
+
+### Isolated design examples and remaining work
+
+The following arithmetic examples use hypothetical size claims within each
+existing member-byte ceiling. They do not assert valid records, complete files,
+provenance or native bundles.
+
+| Example | Payload P | Manifest length | All-nine A |
+|---|---:|---:|---:|
+| Eight payload-size claims of 1000 bytes | 8000 | 1227 | 9227 |
+| Only physical payload-size claim is 9999 | 9999 | 1206 | 11205 |
+| Only physical payload-size claim is 10000 | 10000 | 1208 | 11208 |
+| Every member byte/record claim at its ceiling | 4133888 | 1251 | 4135139 |
+
+The decimal transition changes M's length but never changes the definition
+total_bytes = P. A total claim of 8001 with entry sum 8000 refuses. If false
+entry claims sum to 7999 and total_bytes also says 7999, agreement still cannot
+override actual payload lengths summing to 8000.
+
+For the aggregate predicate alone, 4193053 + 1251 = 4194304 passes that one
+inequality and 4193054 + 1251 = 4194305 fails it. Both payload scalars exceed
+the sum of current member caps: neither is an attainable bundle satisfying
+those caps, and neither receives acceptance credit.
+
+The first existing CCX_GOLDENS context fixture is 609 canonical bytes with SHA256
+1c545ff21379ab29eff1ed48fa4ad3e57083f851347aae904936d7893edbad79.
+Equal outer/member digest claims that differ from that actual validated-byte
+digest refuse. An added LF or leading space is rejected before hashing, not
+normalized. Even a correct context-file digest cannot resolve absent or
+mismatched upstream identities/provenance; those independently require refusal.
+
+These examples are definitions for future consistency checks, not new test-node
+reservations or executed acceptance tests. Reader reason/status mappings,
+invalid/unavailable receipt null identities and failed-inspection retention
+remain unchanged. A separately reviewed implementation scope and all existing
+publication, execution and acceptance gates are still required before any
+exporter, reader, bundle-consistency implementation or native work. Existing
+160 codec units, formal 29, eventual portable union 189 and native 89 are unchanged.
