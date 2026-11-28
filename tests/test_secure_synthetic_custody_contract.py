@@ -1,4 +1,4 @@
-"""One hundred eighty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred ninety-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9683,4 +9683,248 @@ def test_public_transactions_jsonl_delegation_and_precedence():
     finally:
         codec.decode_lookup_observed_record = original_lookup
         codec.decode_transaction_witness_record = original_witness
+        codec.hashlib.sha256 = sha256
+
+
+def test_public_authority_jsonl_canonical_examples():
+    roe = ('roe', SUBJECT)
+    lease = ('lease', SUBJECT, OTHER, LEASE_ID)
+    event = ('event', SUBJECT, OTHER, LEASE_ID, EVENT_ID)
+    owner = ('event', SUBJECT, None, None, EVENT_ID)
+    literal = (
+        b'{"active_operation_limit":1,"allowed_fixture_ids":["allowed"],'
+        b'"budgets":{"actions":64,"connections":64,"inbound_tls_bytes":1048576,'
+        b'"outbound_tls_bytes":524288,"runtime_ms":320000},'
+        b'"engagement_id":"12345678-1234-4234-9234-123456789abc",'
+        b'"excluded_operations":[],"expires_utc":"2026-11-19T00:00:00.000000Z",'
+        b'"included_operations":["synthetic-service-status-v1"],'
+        b'"not_before_utc":"2026-11-18T00:00:00.000000Z",'
+        b'"operation_profile_sha256":"b0e32be82eb77085db8fed7a165cab5c13ca2219247958f69dfe0ed8fc47d5e2",'
+        b'"previous_revision_sha256":null,"revision":1,"runtime_lock_sha256":"'
+        + b'b' * 64 + b'","schema_version":"s43-roe-v1","trust_sha256":"'
+        + b'c' * 64 + b'"}'
+    )
+    assert codec.decode_public_authority_jsonl(literal + b'\n', (roe,)) == [_roe()]
+    empty = codec.decode_public_authority_jsonl(b'', ())
+    assert empty == [] and empty is not codec.decode_public_authority_jsonl(b'', ())
+    for record, expected in ((_roe(), roe), (_lease(), lease), (_event(), event), (_event('roe_adopted'), owner)):
+        assert codec.decode_public_authority_jsonl(_wire(record) + b'\n', (expected,)) == [record]
+    for kind in EVENT_DETAIL_TYPES:
+        record = _event(kind)
+        assert codec.decode_public_authority_jsonl(_wire(record) + b'\n', (('event', *_event_args(kind)),)) == [record]
+    records = [_roe(), _lease('reserved'), _event('result_observed'), _event('roe_adopted'),
+               dict(_roe(), engagement_id=OTHER),
+               dict(_lease(), engagement_id=OTHER, operation_id=SUBJECT, lease_id=EVENT_ID),
+               dict(_event(), engagement_id=OTHER, operation_id=SUBJECT, lease_id=EVENT_ID, event_id=LEASE_ID),
+               _event('allowance_reserved')]
+    plan = (roe, lease, event, owner, ('roe', OTHER), ('lease', OTHER, SUBJECT, EVENT_ID),
+            ('event', OTHER, SUBJECT, EVENT_ID, LEASE_ID), event)
+    assert all(len(_wire(record)) <= 3072 for record in records)
+    frame = b''.join(_wire(record) + b'\n' for record in records)
+    first = codec.decode_public_authority_jsonl(frame, plan)
+    second = codec.decode_public_authority_jsonl(frame, plan)
+    assert type(first) is list and first == second == records and first is not second
+    assert all(type(a) is dict and a is not b for a, b in zip(first, second))
+    assert first[0]['budgets'] is not second[0]['budgets']
+    for key in ('included_operations', 'excluded_operations', 'allowed_fixture_ids'):
+        assert first[0][key] is not second[0][key]
+    assert first[2]['details'] is not second[2]['details']
+    assert first[2]['details']['result'] is not second[2]['details']['result']
+    assert first[7]['details']['reserved'] is not second[7]['details']['reserved']
+    assert first[7]['details']['usage_after'] is not second[7]['details']['usage_after']
+    first[0]['budgets']['actions'] = 0
+    first[0]['allowed_fixture_ids'].clear()
+    first[2]['details']['result']['outcome'] = 'changed'
+    first[7]['details']['reserved']['actions'] = 0
+    first.pop()
+    assert second == records and frame == b''.join(_wire(record) + b'\n' for record in records)
+    reverse = b''.join(_wire(record) + b'\n' for record in reversed(records))
+    assert codec.decode_public_authority_jsonl(reverse, tuple(reversed(plan))) == list(reversed(records))
+    # Repeated records/IDs/sequences and mixed subjects remain grammatical only.
+    assert len(frame * 16) <= 524288
+    result = codec.decode_public_authority_jsonl(frame * 16, plan * 16)
+    assert len(result) == 128 and result == records * 16 and result[0] is not result[8]
+    assert result[0]['budgets'] is not result[8]['budgets']
+    assert result[2]['details']['result'] is not result[10]['details']['result']
+
+
+def test_public_authority_jsonl_expected_records():
+    class HostileTuple(tuple):
+        __len__ = __iter__ = __getitem__ = _pm_bomb
+    class HostileString(str):
+        __len__ = __eq__ = __hash__ = _pm_bomb
+    roe = ('roe', SUBJECT)
+    lease = ('lease', SUBJECT, OTHER, LEASE_ID)
+    event = ('event', SUBJECT, OTHER, LEASE_ID, EVENT_ID)
+    owner = ('event', SUBJECT, None, None, EVENT_ID)
+    originals = codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event
+    codec.decode_public_roe = codec.decode_public_lease = codec.decode_public_event = _pm_bomb
+    try:
+        for plan in (None, True, {}, [], iter(()), HostileTuple(())):
+            _reject(lambda: codec.decode_public_authority_jsonl(None, plan), 'invalid_shape')
+        _reject(lambda: codec.decode_public_authority_jsonl(None, (HostileTuple(()),) * 129), 'invalid_value')
+        for row in (None, [], {}, (), ('roe',), ('unknown', None, None), event + (SUBJECT,), HostileTuple(roe),
+                    ('roe', None, None, None), ('lease', None), ('lease', None, None, None, None),
+                    ('event', None), ('event', None, None, None)):
+            _reject(lambda: codec.decode_public_authority_jsonl(None, (row,)), 'invalid_shape')
+        for selector in (None, True, 1, b'roe', HostileString('roe')):
+            _reject(lambda: codec.decode_public_authority_jsonl(None, ((selector, None),)), 'invalid_shape')
+        for selector in ('', 'ROE', 'unknown', '\u00e9', 'x' * 10000):
+            _reject(lambda: codec.decode_public_authority_jsonl(None, ((selector, None),)), 'invalid_value')
+        for valid in (roe, lease, event):
+            for index in range(1, len(valid)):
+                for value, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                                    (HostileString(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                                    ('not-a-uuid', 'invalid_value'), (SUBJECT.upper(), 'invalid_value')):
+                    row = list(valid)
+                    row[index] = value
+                    _reject(lambda: codec.decode_public_authority_jsonl(None, (valid, tuple(row))), code)
+        for row, code in (
+                (('lease', None, '', LEASE_ID), 'invalid_shape'), (('lease', '', None, LEASE_ID), 'invalid_value'),
+                (('event', '', None, OTHER, None), 'invalid_value'),
+                (('event', SUBJECT, '', None, ''), 'invalid_value'),
+                (('event', SUBJECT, '', None, EVENT_ID), 'invalid_shape'),
+                (('event', SUBJECT, None, LEASE_ID, EVENT_ID), 'invalid_shape'),
+                (('event', SUBJECT, '', False, EVENT_ID), 'invalid_value'),
+                (('event', SUBJECT, False, '', EVENT_ID), 'invalid_shape')):
+            _reject(lambda: codec.decode_public_authority_jsonl(b'{', (row,)), code)
+        for plan, code in (((('roe', None), ('unknown', None)), 'invalid_shape'),
+                           ((('unknown', None), ('roe', None)), 'invalid_value'),
+                           ((('roe', ''), None), 'invalid_value')):
+            _reject(lambda: codec.decode_public_authority_jsonl(None, plan), code)
+        for frame, plan in ((b'', (roe,)), (b'', (owner,)), (b'{}\n', ()), (b'{}\n', (roe, event))):
+            _reject(lambda: codec.decode_public_authority_jsonl(frame, plan), 'invalid_result')
+    finally:
+        codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = originals
+    for record, plan in ((_roe(), roe), (_lease(), lease), (_event(), event)):
+        for index in range(1, len(plan)):
+            wrong = list(plan)
+            wrong[index] = OTHER if plan[index] != OTHER else SUBJECT
+            _reject(lambda: codec.decode_public_authority_jsonl(_wire(record) + b'\n', (tuple(wrong),)), 'wrong_subject')
+    # Standalone lease depth1 rejects nested alternatives before their fields.
+    for record, plan, code in ((_roe(), lease, 'invalid_encoding'), (_roe(), event, 'invalid_shape'),
+                               (_lease(), roe, 'invalid_shape'), (_lease(), event, 'invalid_shape'),
+                               (_event(), roe, 'invalid_shape'), (_event(), lease, 'invalid_encoding'),
+                               (_event('result_observed'), roe, 'invalid_encoding')):
+        _reject(lambda: codec.decode_public_authority_jsonl(_wire(record) + b'\n', (plan,)), code)
+
+
+def test_public_authority_jsonl_framing_and_bounds():
+    calls = []
+    originals = codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event
+    def roe_spy(frame, *expected):
+        calls.append(('roe', frame))
+        return originals[0](frame, *expected)
+    def lease_spy(frame, *expected):
+        calls.append(('lease', frame))
+        return originals[1](frame, *expected)
+    def event_spy(frame, *expected):
+        calls.append(('event', frame))
+        return originals[2](frame, *expected)
+    codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = roe_spy, lease_spy, event_spy
+    try:
+        class HostileBytes(bytes):
+            __len__ = isascii = endswith = count = _pm_bomb
+        for record, plan, literal, escaped, physical in (
+                (_roe(), ('roe', SUBJECT), b'"s43-roe-v1"', b'"s43-roe-\\nv1"', b'"s43-roe-\nv1"'),
+                (_lease(), ('lease', SUBJECT, OTHER, LEASE_ID), b'"prepared"', b'"prep\\nared"', b'"prep\nared"'),
+                (_event(), ('event', SUBJECT, OTHER, LEASE_ID, EVENT_ID),
+                 b'"lease_prepared"', b'"lease_\\nprepared"', b'"lease_\nprepared"')):
+            calls.clear()
+            single = _wire(record)
+            for frame in (None, '', bytearray(single), memoryview(single), HostileBytes(single)):
+                _reject(lambda: codec.decode_public_authority_jsonl(frame, (plan,)), 'invalid_shape')
+                assert not calls
+            for frame in (single, single + b'\r\n', b'\r' + single + b'\n',
+                          b'\xef\xbb\xbf' + single + b'\n', b'\xff\n', b'\n', b'\n' + single + b'\n',
+                          single + b'\n\n', b'x' * 524288 + b'\n', b'{}\n' * 129,
+                          b'x' * 3073 + b'\n', b'{}\n' + b'x' * 3073 + b'\n'):
+                _reject(lambda: codec.decode_public_authority_jsonl(frame, (plan,)), 'invalid_encoding')
+                assert not calls
+            # Exact member cap cannot pass all public line/count bounds.
+            exact_member = (b'x' * 4095 + b'\n') * 128
+            assert len(exact_member) == 524288
+            _reject(lambda: codec.decode_public_authority_jsonl(exact_member, (plan,) * 128), 'invalid_encoding')
+            assert not calls
+            framed_maximum = (b'x' * 3072 + b'\n') * 128
+            assert len(framed_maximum) == 393344 < 524288
+            for frame, expected in ((b'x' * 3072 + b'\n', (plan,)), (framed_maximum, (plan,) * 128)):
+                calls.clear()
+                _reject(lambda: codec.decode_public_authority_jsonl(frame, expected), 'invalid_encoding')
+                assert len(calls) == 1 and calls[0][0] == plan[0]
+            for frame, code in ((b' ' + single + b'\n', 'invalid_encoding'),
+                                (single + b' \n', 'invalid_encoding'), (single + b'\v\n', 'invalid_encoding'),
+                                (single.replace(literal, escaped) + b'\n', 'invalid_value')):
+                calls.clear()
+                _reject(lambda: codec.decode_public_authority_jsonl(frame, (plan,)), code)
+                assert len(calls) == 1 and calls[0][0] == plan[0]
+            calls.clear()
+            _reject(lambda: codec.decode_public_authority_jsonl(single.replace(literal, physical) + b'\n', (plan,)),
+                    'invalid_result')
+            assert not calls
+    finally:
+        codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = originals
+
+
+def test_public_authority_jsonl_delegation_and_precedence():
+    calls, returned = [], []
+    originals = codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event
+    sha256 = codec.hashlib.sha256
+    def roe_spy(frame, *expected):
+        calls.append(('roe', frame, expected))
+        result = originals[0](frame, *expected)
+        returned.append(result)
+        return result
+    def lease_spy(frame, *expected):
+        calls.append(('lease', frame, expected))
+        result = originals[1](frame, *expected)
+        returned.append(result)
+        return result
+    def event_spy(frame, *expected):
+        calls.append(('event', frame, expected))
+        result = originals[2](frame, *expected)
+        returned.append(result)
+        return result
+    codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = roe_spy, lease_spy, event_spy
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        roe, lease = ('roe', SUBJECT), ('lease', SUBJECT, OTHER, LEASE_ID)
+        event = ('event', SUBJECT, OTHER, LEASE_ID, EVENT_ID)
+        records = [_roe(), _lease(), _event('result_observed')]
+        lines = [_wire(record) for record in records]
+        result = codec.decode_public_authority_jsonl(b''.join(line + b'\n' for line in lines), (roe, lease, event))
+        assert calls == [(p[0], line, p[1:]) for p, line in zip((roe, lease, event), lines)]
+        assert result == returned and result is not returned and all(a is b for a, b in zip(result, returned))
+        assert result[0]['budgets'] is returned[0]['budgets']
+        assert result[0]['allowed_fixture_ids'] is returned[0]['allowed_fixture_ids']
+        assert result[2]['details'] is returned[2]['details']
+        assert result[2]['details']['result'] is returned[2]['details']['result']
+        bad_nested = _event('result_observed')
+        bad_nested['details']['result']['operation_id'] = SUBJECT
+        wrong_event = ('event', SUBJECT, OTHER, LEASE_ID, SUBJECT)
+        for frame, plan, code, selected in (
+                (b'{', (('unknown', None),), 'invalid_value', []),
+                (b'{', (('event', SUBJECT, '', None, EVENT_ID),), 'invalid_shape', []),
+                (lines[0] + b'\n\n', (), 'invalid_encoding', []), (b'{}\n', (), 'invalid_result', []),
+                (lines[0] + b'\n' + b' ' + lines[1] + b'\n', (roe, lease), 'invalid_encoding', ['roe', 'lease']),
+                (lines[0] + b'\n' + lines[2] + b'\n' + lines[1] + b'\n', (roe, wrong_event, lease),
+                 'wrong_subject', ['roe', 'event']),
+                (lines[0] + b'\n' + lines[1] + b'\n', (lease, lease), 'invalid_encoding', ['lease']),
+                (lines[1] + b'\n' + lines[2] + b'\n', (event, event), 'invalid_shape', ['event']),
+                (lines[2] + b'\n' + lines[0] + b'\n', (roe, roe), 'invalid_encoding', ['roe']),
+                (_wire(dict(_roe(), private='RAW_SENTINEL')) + b'\n', (roe,), 'invalid_shape', ['roe']),
+                (_wire(dict(_roe(), revision=0)) + b'\n', (roe,), 'invalid_value', ['roe']),
+                (_wire(dict(_roe(), revision=2)) + b'\n', (roe,), 'invalid_result', ['roe']),
+                (_wire(dict(_lease(), state='unknown')) + b'\n', (lease,), 'invalid_value', ['lease']),
+                (_wire(dict(_lease(), reservation_id=SUBJECT)) + b'\n', (lease,), 'invalid_result', ['lease']),
+                (_wire(dict(_event(), kind='unknown')) + b'\n', (event,), 'invalid_value', ['event']),
+                (_wire(dict(_event(), sequence=2)) + b'\n', (event,), 'invalid_result', ['event']),
+                (_wire(bad_nested) + b'\n', (event,), 'invalid_result', ['event'])):
+            calls.clear()
+            error = _reject(lambda: codec.decode_public_authority_jsonl(frame, plan), code)
+            assert [row[0] for row in calls] == selected
+            assert error.__cause__ is None and error.__context__ is None and 'RAW_SENTINEL' not in str(error)
+        assert codec.decode_public_authority_jsonl(b'', ()) == []
+    finally:
+        codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = originals
         codec.hashlib.sha256 = sha256

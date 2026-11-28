@@ -2676,3 +2676,63 @@ def decode_public_transactions_jsonl(frame: bytes, expected_records: tuple) -> l
             if expected[0] == 'lookup_observed'
             else decode_transaction_witness_record(line, *expected[1:])
             for line, expected in zip(lines, expected_records)]
+
+
+def decode_public_authority_jsonl(frame: bytes, expected_records: tuple) -> list[dict]:
+    """Parse bounded authority JSONL with caller-selected record grammars.
+
+    Selectors authenticate no producer. Intrinsic grammar and caller IDs prove
+    no shared identity, revision/state/event history, uniqueness, hash chain,
+    adoption, admission, transaction, SQL, registry, provenance or freshness.
+    Empty proves no complete history or witness. No hashing, manifest linkage,
+    file access, reader/exporter or acceptance; no autodetection or fallback.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['authority.jsonl']
+    if type(expected_records) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_records) > record_cap:
+        raise ResultCodecError('invalid_value')
+    for expected in expected_records:
+        if type(expected) is not tuple or len(expected) not in (2, 4, 5):
+            raise ResultCodecError('invalid_shape')
+        selector = expected[0]
+        if type(selector) is not str:
+            raise ResultCodecError('invalid_shape')
+        if selector == 'roe':
+            if len(expected) != 2:
+                raise ResultCodecError('invalid_shape')
+            _expected_subject(expected[1])
+        elif selector == 'lease':
+            if len(expected) != 4:
+                raise ResultCodecError('invalid_shape')
+            for subject in expected[1:]:
+                _expected_subject(subject)
+        elif selector == 'event':
+            if len(expected) != 5:
+                raise ResultCodecError('invalid_shape')
+            _event_subjects(*expected[1:])
+        else:
+            raise ResultCodecError('invalid_value')
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > 3072 for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_records):
+        raise ResultCodecError('invalid_result')
+    records = []
+    for line, expected in zip(lines, expected_records):
+        if expected[0] == 'roe':
+            record = decode_public_roe(line, *expected[1:])
+        elif expected[0] == 'lease':
+            record = decode_public_lease(line, *expected[1:])
+        else:
+            record = decode_public_event(line, *expected[1:])
+        records.append(record)
+    return records
