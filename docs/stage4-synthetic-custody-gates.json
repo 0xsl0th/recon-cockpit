@@ -4598,7 +4598,7 @@
     }
   ],
   "contract": "docs/stage4-synthetic-custody.md",
-  "contract_sha256": "d0ae2ea985ad8558b52dee187f4ba028595e384e41346ae8d54a5d9899118936",
+  "contract_sha256": "9e6478a86c7213d4f5e8e3da24e919a5c30efcc8ca66153256457104412a079c",
   "counting_rules": [
     "Canonical19 obligations remain unchanged; planned variants/node IDs are not executions.",
     "K01 terminal and A01 reference one physical outcome; do not execute or count it twice.",
@@ -12370,5 +12370,54 @@
       "Whether root context_sha256 equals context.json digest and the precise digest input."
     ],
     "validation": "Collect exact160 unit IDs; run six new public-manifest units plus affected preservation check; independent review and complete PR/main CI before publication."
+  },
+  "portable_manifest_claims_slice": {
+    "scope_review": "passed_for_manifest_claim_relations_only",
+    "scope_sha256": "49ba5f7955627301710d95b54bac1ed5dd5d6aaafd6b426f1929747683bc2a51",
+    "verified_base_merge": "0417754e6b06b9fecbdf9de9bab1ba1b575f2f51",
+    "implementation_authorized_for_this_slice_only": true,
+    "existing_amendment_paths": [
+      "recon_cockpit_synthetic/codec.py",
+      "tests/test_secure_synthetic_custody_contract.py",
+      "docs/stage4-synthetic-custody.md",
+      "docs/stage4-synthetic-custody-gates.json",
+      "tests/test_secure_engagement_live_preservation.py"
+    ],
+    "new_tracked_paths": [],
+    "additional_codec_imports": [],
+    "existing_shared_helpers_changed": false,
+    "api": "decode_public_manifest_claims(frame: bytes, expected_bundle_id: str) -> dict",
+    "relations": [
+      "total_bytes equals sum of all eight entry bytes claims",
+      "context_sha256 equals unique context.json entry sha256 claim"
+    ],
+    "validation_order": "unchanged decoder once, including wrong_subject; payload sum; context digest claim; mismatch invalid_result",
+    "new_unit_nodes": [
+      "tests/test_secure_synthetic_custody_contract.py::test_public_manifest_claims_consistent_examples",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_manifest_claims_payload_totals",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_manifest_claims_context_digest_relation",
+      "tests/test_secure_synthetic_custody_contract.py::test_public_manifest_claims_validation_precedence"
+    ],
+    "new_unit_node_count": 4,
+    "prior_codec_unit_nodes_preserved": 160,
+    "combined_unit_node_count": 164,
+    "formal_portable_nodes_unchanged": 29,
+    "formal_portable_nodes_implemented_by_this_slice": 0,
+    "eventual_portable_union_count": 193,
+    "native_nodes_unchanged": 89,
+    "manifest_claim_relations_implemented": true,
+    "actual_reader_implemented": false,
+    "actual_exporter_implemented": false,
+    "bundle_consistency_implemented": false,
+    "actual_validated_counts_proved": false,
+    "aggregate_accounting_proved": false,
+    "digest_to_file_link_proved": false,
+    "provenance_or_freshness_proved": false,
+    "valid_bundle_proved": false,
+    "completed_witness_proved": false,
+    "native_execution_authorized": false,
+    "acceptance_credit": false,
+    "remaining_gates": "Actual validated payload lengths/counts/digests, independent all-nine4MiB, trusted upstream identities, bounded owned stable files,2000ms reader, recovery reservations4096/2909552 and all physical/progress/recovery/acceptance gates.",
+    "validation": "Collect exact164 IDs; run four new finite units plus affected preservation; independent review and complete PR/main CI."
   }
 }

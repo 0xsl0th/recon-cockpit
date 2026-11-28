@@ -2450,3 +2450,19 @@ def encode_public_manifest_record(record: dict, expected_bundle_id: str) -> byte
     if validated['bundle_id'] != expected_bundle_id:
         raise ResultCodecError('wrong_subject')
     return encoded
+
+
+def decode_public_manifest_claims(frame: bytes, expected_bundle_id: str) -> dict:
+    """Check two manifest claim relations after bounded grammar validation.
+
+    Agreement proves no actual payload bytes/counts, validated SHA256 input,
+    digest-to-file equality, all-nine aggregate, ownership, provenance, valid
+    bundle, completed witness or inspection. Claims never authorize reads,
+    allocation or acceptance; all external reader and runtime gates remain.
+    """
+    record = decode_public_manifest_record(frame, expected_bundle_id)
+    if record['total_bytes'] != sum(entry['bytes'] for entry in record['members']):
+        raise ResultCodecError('invalid_result')
+    if record['context_sha256'] != record['members'][2]['sha256']:
+        raise ResultCodecError('invalid_result')
+    return record
