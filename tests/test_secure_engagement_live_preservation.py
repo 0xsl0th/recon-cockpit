@@ -508,13 +508,13 @@ def test_exact_accepted_source_and_change_allowlist():
     s43_codec_files = {
         'recon_cockpit_synthetic/__init__.py': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         'recon_cockpit_synthetic/contract.py': 'c2864df6eb91c56d85851af35eb9ddca036144cff1fd5063265250d2d1e3823a',
-        'recon_cockpit_synthetic/codec.py': 'e56d7dec809b04c7b1c3d8f4f731b205cf79849e6a4d0676f0c76b9d51c3a702',
-        'tests/test_secure_synthetic_custody_contract.py': '95cbc75f3444f062886d70b3ed3a274f35e36038533b746c4c6867e43e416ded',
+        'recon_cockpit_synthetic/codec.py': 'e322b75187009e6a376c6df9a1f7db50f43d007035e39a33307c8e9358399c49',
+        'tests/test_secure_synthetic_custody_contract.py': '0721c7fdc1e34a79fd59f18d76d6b0199dcb728de2549104e685646a1ee424d1',
     }
     s43_codec_imports = {
         'recon_cockpit_synthetic/__init__.py': set(),
         'recon_cockpit_synthetic/contract.py': set(),
-        'recon_cockpit_synthetic/codec.py': {'datetime', 'json', 're', 'recon_cockpit_synthetic.contract'},
+        'recon_cockpit_synthetic/codec.py': {'datetime', 'hashlib', 'json', 're', 'recon_cockpit_synthetic.contract'},
         'tests/test_secure_synthetic_custody_contract.py': {'json', 'pytest', 'recon_cockpit_synthetic.codec'},
     }
     forbidden = {'__import__', 'eval', 'exec', 'compile', 'globals', 'locals',

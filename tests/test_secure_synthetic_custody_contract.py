@@ -1,4 +1,4 @@
-"""One hundred sixty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred sixty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -8707,3 +8707,170 @@ def test_public_manifest_claims_validation_precedence():
         assert len(calls) == 3 and len(returned) == 2
     finally:
         codec.decode_public_manifest_record = original
+
+
+# Literal owned result vectors; no production table or computed digest oracle.
+PRM_READY_SHA256 = '71d9b664f8b4b5dd07a43998bc51a6892334623e8b627dff616e93651e5ec271'
+PRM_REFUSED_BYTES = (
+    b'{"http_status":403,"operation_id":"22345678-1234-4234-9234-123456789abc",'
+    b'"outcome":"authorization_refused","schema_version":"1",'
+    b'"service_identifier":null,"service_status":null}'
+)
+PRM_REFUSED_SHA256 = '7184c520cefc7a60a92e066015c5bd20f2d9774bc5c6ed7bf5e5c4fcec9cca4e'
+
+
+def _prm_manifest(size=182, digest=PRM_READY_SHA256, records=1, bundle=OTHER):
+    manifest = _pm_record()
+    manifest['bundle_id'] = bundle
+    manifest['members'][6].update(bytes=size, records=records, sha256=digest)
+    manifest['total_bytes'] = size
+    return manifest
+
+
+def test_public_result_member_canonical_examples():
+    refused = dict(_record(RELATIONS[3]), operation_id=OTHER)
+    for frame, size, digest, bundle, operation, expected in (
+            (READY_BYTES, 182, PRM_READY_SHA256, OTHER, SUBJECT, _record()),
+            (PRM_REFUSED_BYTES, 176, PRM_REFUSED_SHA256, SUBJECT, OTHER, refused)):
+        assert len(frame) == size and _wire(expected) == frame
+        manifest = _prm_manifest(size, digest, bundle=bundle)
+        # The other seven members deliberately have false/unverified claims.
+        manifest['members'][0].update(bytes=17, records=128, sha256='f' * 64)
+        manifest['total_bytes'] += 17
+        before = _wire(manifest)
+        first = codec.decode_public_result_member(before, frame, bundle, operation)
+        second = codec.decode_public_result_member(before, frame, bundle, operation)
+        assert type(first) is dict and first == second == expected and first is not second
+        first['outcome'] = 'mutated'
+        assert second == expected and _wire(manifest) == before and _wire(expected) == frame
+
+
+def test_public_result_member_count_and_length():
+    original = codec.hashlib.sha256
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        for count, size in ((0, 182), (0, 0), (1, 0), (1, 181), (1, 183), (1, 1024)):
+            manifest = _prm_manifest(size=size, records=count)
+            # Coherent false counts/sizes pass the unchanged claims decoder.
+            frame = _wire(manifest)
+            assert codec.decode_public_manifest_claims(frame, OTHER) == manifest
+            _reject(lambda: codec.decode_public_result_member(frame, READY_BYTES, OTHER, SUBJECT),
+                    'invalid_result')
+        for field, value in (('records', 2), ('records', True), ('bytes', 1025),
+                             ('name', 'manifest.json')):
+            manifest = _prm_manifest()
+            manifest['members'][6][field] = value
+            _reject(lambda: codec.decode_public_result_member(_wire(manifest), READY_BYTES, OTHER, SUBJECT),
+                    'invalid_value')
+        manifest = _prm_manifest()
+        manifest['members'][5], manifest['members'][6] = manifest['members'][6], manifest['members'][5]
+        _reject(lambda: codec.decode_public_result_member(_wire(manifest), READY_BYTES, OTHER, SUBJECT),
+                'invalid_value')
+    finally:
+        codec.hashlib.sha256 = original
+    assert codec.decode_public_result_member(_wire(_prm_manifest()), READY_BYTES, OTHER, SUBJECT) == _record()
+
+
+def test_public_result_member_exact_digest():
+    calls = []
+    original = codec.hashlib.sha256
+    def observed(frame):
+        assert frame is READY_BYTES
+        calls.append(frame)
+        return original(frame)
+    codec.hashlib.sha256 = observed
+    try:
+        # Wrong member, LF suffix, domain prefix and a different canonical result.
+        for digest in ('0' * 64,
+                       '8c9fbae77b33630ebabeb35074c91e6b111c1801222e215a56984f240ba05b0e',
+                       '87befb488e9b5716795b69309e29fbaaba9d5c0e1e3561eaeffee6485d0665fd',
+                       '6afcca1569dd45af6ae09e2409fa19a3e3ecfd4b9535fda796fa6ad0f35a8571'):
+            manifest = _prm_manifest(digest=digest)
+            manifest['members'][0]['sha256'] = PRM_READY_SHA256
+            before = len(calls)
+            _reject(lambda: codec.decode_public_result_member(_wire(manifest), READY_BYTES, OTHER, SUBJECT),
+                    'invalid_result')
+            assert len(calls) == before + 1
+        before = len(calls)
+        assert codec.decode_public_result_member(_wire(_prm_manifest()), READY_BYTES, OTHER, SUBJECT) == _record()
+        assert len(calls) == before + 1
+        class HostileBytes(bytes):
+            __len__ = isascii = decode = _pm_bomb
+        manifest_frame = _wire(_prm_manifest())
+        for frame, code in (
+                (None, 'invalid_shape'), (bytearray(READY_BYTES), 'invalid_shape'),
+                (memoryview(READY_BYTES), 'invalid_shape'), (READY_BYTES.decode('ascii'), 'invalid_shape'),
+                (HostileBytes(READY_BYTES), 'invalid_shape'), (b'', 'invalid_encoding'),
+                (b'{', 'invalid_encoding'), (b'x' * 1025, 'invalid_encoding'),
+                (b'\xef\xbb\xbf' + READY_BYTES, 'invalid_encoding'), (b'\xff', 'invalid_encoding'),
+                (READY_BYTES + b'\n', 'invalid_encoding'), (b' ' + READY_BYTES, 'invalid_encoding'),
+                (READY_BYTES.replace(b'"ready"', b'"re\\u0061dy"'), 'invalid_encoding'),
+                (_wire(dict(_record(), private='RAW_SENTINEL')), 'invalid_shape'),
+                (b'{"outcome":"RAW_SENTINEL",' + READY_BYTES[1:], 'invalid_shape'),
+                (_wire(dict(_record(), http_status=403)), 'invalid_result')):
+            error = _reject(lambda: codec.decode_public_result_member(manifest_frame, frame, OTHER, SUBJECT), code)
+            assert error.__cause__ is None and error.__context__ is None
+        assert len(calls) == before + 1
+    finally:
+        codec.hashlib.sha256 = original
+
+
+def test_public_result_member_validation_precedence():
+    events, returned = [], []
+    manifest_decode = codec.decode_public_manifest_claims
+    result_decode = codec.decode_public_result
+    sha256 = codec.hashlib.sha256
+    def observed_manifest(frame, expected):
+        events.append(('manifest', frame, expected))
+        return manifest_decode(frame, expected)
+    def observed_result(frame, expected):
+        events.append(('result', frame, expected))
+        result = result_decode(frame, expected)
+        returned.append(result)
+        return result
+    def observed_hash(frame):
+        events.append(('hash', frame))
+        return sha256(frame)
+    def refused(manifest, result, bundle, operation, code, order):
+        events.clear()
+        error = _reject(lambda: codec.decode_public_result_member(manifest, result, bundle, operation), code)
+        assert [e[0] for e in events] == order
+        assert error.__cause__ is None and error.__context__ is None
+    codec.decode_public_manifest_claims = observed_manifest
+    codec.decode_public_result = observed_result
+    codec.hashlib.sha256 = observed_hash
+    try:
+        frame = _wire(_prm_manifest())
+        class HostileString(str):
+            __len__ = _pm_bomb
+        for value, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                            (HostileString(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                            (SUBJECT.upper(), 'invalid_value')):
+            refused(b'{', b'{', value, SUBJECT, code, [])
+            refused(b'{', b'{', OTHER, value, code, [])
+        refused(b'{', b'{', None, '', 'invalid_shape', [])
+        refused(b'{', b'{', '', None, 'invalid_value', [])
+        for bad, code in ((None, 'invalid_shape'), (b'{', 'invalid_encoding'),
+                          (frame + b'\n', 'invalid_encoding'),
+                          (_wire(dict(_prm_manifest(), total_bytes=0)), 'invalid_result'),
+                          (_wire(dict(_prm_manifest(), context_sha256='b' * 64)), 'invalid_result')):
+            refused(bad, b'{', OTHER, SUBJECT, code, ['manifest'])
+        refused(frame, b'{', SUBJECT, SUBJECT, 'wrong_subject', ['manifest'])
+        broken = _wire(_prm_manifest(size=0, digest='0' * 64, records=0))
+        refused(broken, b'{', OTHER, SUBJECT, 'invalid_encoding', ['manifest', 'result'])
+        refused(broken, READY_BYTES, OTHER, OTHER, 'wrong_subject', ['manifest', 'result'])
+        refused(broken, READY_BYTES, OTHER, SUBJECT, 'invalid_result', ['manifest', 'result'])
+        refused(_wire(_prm_manifest(size=181)), READY_BYTES, OTHER, SUBJECT,
+                'invalid_result', ['manifest', 'result'])
+        refused(_wire(_prm_manifest(digest='0' * 64)), READY_BYTES, OTHER, SUBJECT,
+                'invalid_result', ['manifest', 'result', 'hash'])
+        events.clear()
+        result = codec.decode_public_result_member(frame, READY_BYTES, OTHER, SUBJECT)
+        assert [e[0] for e in events] == ['manifest', 'result', 'hash']
+        assert events[0][1] is frame and events[0][2] is OTHER
+        assert events[1][1] is events[2][1] is READY_BYTES and events[1][2] is SUBJECT
+        assert result is returned[-1] and result == _record()
+    finally:
+        codec.decode_public_manifest_claims = manifest_decode
+        codec.decode_public_result = result_decode
+        codec.hashlib.sha256 = sha256
