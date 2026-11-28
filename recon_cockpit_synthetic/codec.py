@@ -6,6 +6,7 @@ Rejections expose fixed codes only; callers must not log input or traceback loca
 """
 
 import datetime
+import hashlib
 import json
 import re
 
@@ -2466,3 +2467,26 @@ def decode_public_manifest_claims(frame: bytes, expected_bundle_id: str) -> dict
     if record['context_sha256'] != record['members'][2]['sha256']:
         raise ResultCodecError('invalid_result')
     return record
+
+
+def decode_public_result_member(manifest_frame: bytes, result_frame: bytes,
+                                expected_bundle_id: str, expected_operation_id: str) -> dict:
+    """Link one validated result buffer to unauthenticated manifest claims.
+
+    Caller-supplied identities do not prove a trusted bundle-operation association.
+    No other payload, context hash, actual total/all-nine accounting, file ownership,
+    provenance, authority, useful completion, reader/exporter, valid bundle or
+    acceptance is proved. Only exact canonical result bytes reach hashing.
+    """
+    _expected_subject(expected_bundle_id)
+    _expected_subject(expected_operation_id)
+    manifest = decode_public_manifest_claims(manifest_frame, expected_bundle_id)
+    result = decode_public_result(result_frame, expected_operation_id)
+    entry = manifest['members'][6]  # The manifest decoder proves result.json's position.
+    if entry['records'] != 1:
+        raise ResultCodecError('invalid_result')
+    if entry['bytes'] != len(result_frame):
+        raise ResultCodecError('invalid_result')
+    if entry['sha256'] != hashlib.sha256(result_frame).hexdigest():
+        raise ResultCodecError('invalid_result')
+    return result
