@@ -1,4 +1,4 @@
-"""One hundred eighty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred eighty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9479,4 +9479,208 @@ def test_public_observations_jsonl_delegation_and_precedence():
         assert codec.decode_public_observations_jsonl(b'', ()) == []
     finally:
         codec.decode_observation_record = original
+        codec.hashlib.sha256 = sha256
+
+
+def test_public_transactions_jsonl_canonical_examples():
+    lookup = ('lookup_observed', *_lookup_observed_args())
+    witness = ('transaction_witness', *_txnw_args())
+    golden = LOOKO_GOLDEN_CASES[0][2]
+    assert codec.decode_public_transactions_jsonl(golden + b'\n', (lookup,)) == [_lookup_observed('closed', False)]
+    empty = codec.decode_public_transactions_jsonl(b'', ())
+    assert empty == [] and empty is not codec.decode_public_transactions_jsonl(b'', ())
+    for status in LOOKO_STATUSES:
+        record = _lookup_observed(status)
+        assert len(_wire(record)) <= 3072
+        assert codec.decode_public_transactions_jsonl(_wire(record) + b'\n', (lookup,)) == [record]
+    for case in (None, ('committed', None, True), ('uncertain', 'commit_unknown', False)):
+        record = _txnw(case)
+        assert len(_wire(record)) <= 3072
+        assert codec.decode_public_transactions_jsonl(_wire(record) + b'\n', (witness,)) == [record]
+    records = [_lookup_observed(), _txnw(('committed', None, True)),
+               dict(_lookup_observed('absent'), owner_id=OTHER, operation_id=LOOKO_RECORD, record_id=SUBJECT),
+               dict(_txnw(), writer_id=OTHER, call_id=TXNW_RECORD, record_id=SUBJECT)]
+    plan = (lookup, witness, ('lookup_observed', OTHER, LOOKO_RECORD, SUBJECT),
+            ('transaction_witness', OTHER, TXNW_RECORD, SUBJECT))
+    assert all(len(_wire(record)) <= 3072 for record in records)
+    frame = b''.join(_wire(record) + b'\n' for record in records)
+    first = codec.decode_public_transactions_jsonl(frame, plan)
+    second = codec.decode_public_transactions_jsonl(frame, plan)
+    assert type(first) is list and first == second == records and first is not second
+    assert all(type(a) is dict and a is not b for a, b in zip(first, second))
+    for i in (1, 3):
+        assert type(first[i]['event_ids']) is list and first[i]['event_ids'] is not second[i]['event_ids']
+    assert type(first[1]['transaction_result']) is dict
+    assert first[1]['transaction_result'] is not second[1]['transaction_result']
+    first[1]['event_ids'].clear()
+    first[1]['transaction_result']['status'] = 'changed'
+    first.pop()
+    assert second == records and frame == b''.join(_wire(record) + b'\n' for record in records)
+    reverse = b''.join(_wire(record) + b'\n' for record in reversed(records))
+    assert codec.decode_public_transactions_jsonl(reverse, tuple(reversed(plan))) == list(reversed(records))
+    # Repeated IDs, mixed subjects and caller-selected ordering prove no history.
+    result = codec.decode_public_transactions_jsonl(frame * 16, plan * 16)
+    assert len(result) == 64 and result == records * 16 and result[0] is not result[4]
+    assert result[1]['event_ids'] is not result[5]['event_ids']
+    assert result[1]['transaction_result'] is not result[5]['transaction_result']
+
+
+def test_public_transactions_jsonl_expected_records():
+    class HostileTuple(tuple):
+        __len__ = __iter__ = __getitem__ = _pm_bomb
+    class HostileString(str):
+        __len__ = __eq__ = __hash__ = _pm_bomb
+    lookup = ('lookup_observed', *_lookup_observed_args())
+    witness = ('transaction_witness', *_txnw_args())
+    original_lookup = codec.decode_lookup_observed_record
+    original_witness = codec.decode_transaction_witness_record
+    codec.decode_lookup_observed_record = codec.decode_transaction_witness_record = _pm_bomb
+    try:
+        for expected in (None, True, {}, [], iter(()), HostileTuple(())):
+            _reject(lambda: codec.decode_public_transactions_jsonl(b'{', expected), 'invalid_shape')
+        _reject(lambda: codec.decode_public_transactions_jsonl(b'{', (HostileTuple(()),) * 65), 'invalid_value')
+        for row in (None, [], {}, (), ('lookup_observed',), lookup[:3], lookup + (SUBJECT,), HostileTuple(lookup)):
+            _reject(lambda: codec.decode_public_transactions_jsonl(b'{', (row,)), 'invalid_shape')
+        for selector in (None, True, 1, b'lookup_observed', HostileString('lookup_observed')):
+            _reject(lambda: codec.decode_public_transactions_jsonl(None, ((selector, None, None, None),)), 'invalid_shape')
+        for selector in ('', 'LOOKUP_OBSERVED', 'unknown', '\u00e9', 'x' * 10000):
+            _reject(lambda: codec.decode_public_transactions_jsonl(None, ((selector, None, None, None),)), 'invalid_value')
+        for valid in (lookup, witness):
+            for index in range(1, 4):
+                for value, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                                    (HostileString(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                                    ('not-a-uuid', 'invalid_value'), (SUBJECT.upper(), 'invalid_value')):
+                    row = list(valid)
+                    row[index] = value
+                    _reject(lambda: codec.decode_public_transactions_jsonl(None, (valid, tuple(row))), code)
+            for row, code in (((valid[0], None, '', SUBJECT), 'invalid_shape'),
+                              ((valid[0], '', None, SUBJECT), 'invalid_value')):
+                _reject(lambda: codec.decode_public_transactions_jsonl(None, (row,)), code)
+        single = _wire(_lookup_observed()) + b'\n'
+        for frame, expected in ((b'', (lookup,)), (single, ()), (single, (lookup, witness))):
+            _reject(lambda: codec.decode_public_transactions_jsonl(frame, expected), 'invalid_result')
+    finally:
+        codec.decode_lookup_observed_record = original_lookup
+        codec.decode_transaction_witness_record = original_witness
+    # Lookup's depth1 check rejects witness event_ids before closed-field checks.
+    for record, valid, alternate, code in ((_lookup_observed(), lookup, witness, 'invalid_shape'),
+                                           (_txnw(), witness, lookup, 'invalid_encoding')):
+        frame = _wire(record) + b'\n'
+        for index in range(1, 4):
+            row = list(valid)
+            row[index] = OTHER
+            _reject(lambda: codec.decode_public_transactions_jsonl(frame, (tuple(row),)), 'wrong_subject')
+        _reject(lambda: codec.decode_public_transactions_jsonl(frame, (alternate,)), code)
+
+
+def test_public_transactions_jsonl_framing_and_bounds():
+    calls = []
+    original_lookup = codec.decode_lookup_observed_record
+    original_witness = codec.decode_transaction_witness_record
+    def lookup_observed(frame, *expected):
+        calls.append(('lookup_observed', frame))
+        return original_lookup(frame, *expected)
+    def witness_observed(frame, *expected):
+        calls.append(('transaction_witness', frame))
+        return original_witness(frame, *expected)
+    codec.decode_lookup_observed_record = lookup_observed
+    codec.decode_transaction_witness_record = witness_observed
+    try:
+        class HostileBytes(bytes):
+            __len__ = isascii = endswith = count = _pm_bomb
+        for record, plan, literal, escaped, physical in (
+                (_lookup_observed(), ('lookup_observed', *_lookup_observed_args()),
+                 b'"closed"', b'"clo\\nsed"', b'"clo\nsed"'),
+                (_txnw(), ('transaction_witness', *_txnw_args()),
+                 b'"call_entered"', b'"call_\\nentered"', b'"call_\nentered"')):
+            calls.clear()
+            single = _wire(record)
+            for frame in (None, '', bytearray(single), memoryview(single), HostileBytes(single)):
+                _reject(lambda: codec.decode_public_transactions_jsonl(frame, (plan,)), 'invalid_shape')
+                assert not calls
+            for frame in (single, single + b'\r\n', b'\r' + single + b'\n',
+                          b'\xef\xbb\xbf' + single + b'\n', b'\xff\n', b'\n', b'\n' + single + b'\n',
+                          single + b'\n\n', b'x' * 131072 + b'\n', b'{}\n' * 65,
+                          b'x' * 3073 + b'\n', single + b'\n' + b'x' * 3073 + b'\n'):
+                _reject(lambda: codec.decode_public_transactions_jsonl(frame, (plan,)), 'invalid_encoding')
+                assert not calls
+            too_large = (b'x' * 3072 + b'\n') * 64
+            assert len(too_large) == 196672
+            _reject(lambda: codec.decode_public_transactions_jsonl(too_large, (plan,) * 64), 'invalid_encoding')
+            assert not calls
+            # Malformed boundary bytes, never valid records or accepted witnesses.
+            exact_member = (b'x' * 2047 + b'\n') * 64
+            assert len(exact_member) == 131072
+            for frame, expected in ((b'x' * 3072 + b'\n', (plan,)), (exact_member, (plan,) * 64)):
+                calls.clear()
+                _reject(lambda: codec.decode_public_transactions_jsonl(frame, expected), 'invalid_encoding')
+                assert len(calls) == 1 and calls[0][0] == plan[0]
+            for frame, code in ((b' ' + single + b'\n', 'invalid_encoding'),
+                                (single + b' \n', 'invalid_encoding'), (single + b'\v\n', 'invalid_encoding'),
+                                (single.replace(literal, escaped) + b'\n', 'invalid_value')):
+                calls.clear()
+                _reject(lambda: codec.decode_public_transactions_jsonl(frame, (plan,)), code)
+                assert len(calls) == 1 and calls[0][0] == plan[0]
+            calls.clear()
+            _reject(lambda: codec.decode_public_transactions_jsonl(single.replace(literal, physical) + b'\n', (plan,)),
+                    'invalid_result')
+            assert not calls
+    finally:
+        codec.decode_lookup_observed_record = original_lookup
+        codec.decode_transaction_witness_record = original_witness
+
+
+def test_public_transactions_jsonl_delegation_and_precedence():
+    calls, returned = [], []
+    original_lookup = codec.decode_lookup_observed_record
+    original_witness = codec.decode_transaction_witness_record
+    sha256 = codec.hashlib.sha256
+    def lookup_observed(frame, *expected):
+        calls.append(('lookup_observed', frame, expected))
+        result = original_lookup(frame, *expected)
+        returned.append(result)
+        return result
+    def witness_observed(frame, *expected):
+        calls.append(('transaction_witness', frame, expected))
+        result = original_witness(frame, *expected)
+        returned.append(result)
+        return result
+    codec.decode_lookup_observed_record = lookup_observed
+    codec.decode_transaction_witness_record = witness_observed
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        lookup = ('lookup_observed', *_lookup_observed_args())
+        witness = ('transaction_witness', *_txnw_args())
+        first, second = _wire(_lookup_observed()), _wire(_txnw(('committed', None, True)))
+        result = codec.decode_public_transactions_jsonl(first + b'\n' + second + b'\n', (lookup, witness))
+        assert calls == [(lookup[0], first, lookup[1:]), (witness[0], second, witness[1:])]
+        assert result == returned and result is not returned and all(a is b for a, b in zip(result, returned))
+        assert result[1]['event_ids'] is returned[1]['event_ids']
+        assert result[1]['transaction_result'] is returned[1]['transaction_result']
+        bad_nested = _txnw(('committed', None, True))
+        bad_nested['transaction_result']['call_id'] = OTHER
+        wrong_witness = (witness[0], witness[1], OTHER, witness[3])
+        for frame, plan, code, selected in (
+                (b'{', (('unknown', None, None, None),), 'invalid_value', []),
+                (b'{', ((lookup[0], '', SUBJECT, LOOKO_RECORD),), 'invalid_value', []),
+                (first + b'\n\n', (), 'invalid_encoding', []), (b'{}\n', (), 'invalid_result', []),
+                (first + b'\n' + b' ' + second + b'\n', (lookup, witness), 'invalid_encoding', [lookup[0], witness[0]]),
+                (first + b'\n' + second + b'\n' + first + b'\n', (lookup, wrong_witness, lookup),
+                 'wrong_subject', [lookup[0], witness[0]]),
+                (first + b'\n' + first + b'\n', (witness, lookup), 'invalid_shape', [witness[0]]),
+                (second + b'\n' + second + b'\n', (lookup, witness), 'invalid_encoding', [lookup[0]]),
+                (_wire(dict(_lookup_observed(), private='RAW_SENTINEL')) + b'\n', (lookup,), 'invalid_shape', [lookup[0]]),
+                (_wire(dict(_lookup_observed(), status='unknown')) + b'\n', (lookup,), 'invalid_value', [lookup[0]]),
+                (_wire(dict(_lookup_observed(), lease_id=None)) + b'\n', (lookup,), 'invalid_result', [lookup[0]]),
+                (_wire(dict(_txnw(), ordinal=0)) + b'\n', (witness,), 'invalid_value', [witness[0]]),
+                (_wire(dict(_txnw(), event_ids=[OTHER, OTHER])) + b'\n', (witness,), 'invalid_value', [witness[0]]),
+                (_wire(bad_nested) + b'\n', (witness,), 'invalid_result', [witness[0]])):
+            calls.clear()
+            error = _reject(lambda: codec.decode_public_transactions_jsonl(frame, plan), code)
+            assert [row[0] for row in calls] == selected
+            assert error.__cause__ is None and error.__context__ is None and 'RAW_SENTINEL' not in str(error)
+        assert codec.decode_public_transactions_jsonl(b'', ()) == []
+    finally:
+        codec.decode_lookup_observed_record = original_lookup
+        codec.decode_transaction_witness_record = original_witness
         codec.hashlib.sha256 = sha256

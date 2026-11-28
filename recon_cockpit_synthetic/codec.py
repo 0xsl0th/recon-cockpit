@@ -2631,3 +2631,48 @@ def decode_public_observations_jsonl(frame: bytes, expected_subjects: tuple) -> 
         raise ResultCodecError('invalid_result')
     return [decode_observation_record(line, *expected)
             for line, expected in zip(lines, expected_subjects)]
+
+
+def decode_public_transactions_jsonl(frame: bytes, expected_records: tuple) -> list[dict]:
+    """Parse bounded transaction JSONL using caller-selected record grammars.
+
+    Selectors are parsing instructions, not authenticated origins. Grammar proves
+    no lookup/SQL execution, shared identity, chronology, ordinal/barrier/result
+    relationships, reference resolution, provenance, recovery eligibility or
+    authority. Empty is not a witness. No hashing, manifest linkage, file access,
+    reader/exporter or acceptance occurs; no type autodetection or fallback.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['transactions.jsonl']
+    if type(expected_records) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_records) > record_cap:
+        raise ResultCodecError('invalid_value')
+    for expected in expected_records:
+        if type(expected) is not tuple or len(expected) != 4:
+            raise ResultCodecError('invalid_shape')
+        selector = expected[0]
+        if type(selector) is not str:
+            raise ResultCodecError('invalid_shape')
+        if selector == 'lookup_observed':
+            _lookup_observed_subjects(*expected[1:])
+        elif selector == 'transaction_witness':
+            _transaction_witness_subjects(*expected[1:])
+        else:
+            raise ResultCodecError('invalid_value')
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > 3072 for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_records):
+        raise ResultCodecError('invalid_result')
+    return [decode_lookup_observed_record(line, *expected[1:])
+            if expected[0] == 'lookup_observed'
+            else decode_transaction_witness_record(line, *expected[1:])
+            for line, expected in zip(lines, expected_records)]
