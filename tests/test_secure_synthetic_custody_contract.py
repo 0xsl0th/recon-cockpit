@@ -1,4 +1,4 @@
-"""One hundred seventy-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred seventy-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9027,4 +9027,123 @@ def test_progress_jsonl_delegation_and_precedence():
         assert codec.decode_progress_jsonl(b'', ()) == []
     finally:
         codec.decode_progress_record = original
+        codec.hashlib.sha256 = sha256
+
+
+def _producer_frame(records):
+    return b''.join(_wire(record) + b'\n' for record in records)
+
+
+def test_progress_producer_claims_canonical_examples():
+    assert codec.decode_progress_producer_claims(PROG_CANONICAL_BYTES + b'\n', (_progress_args(),)) == [_progress()]
+    empty = codec.decode_progress_producer_claims(b'', ())
+    assert empty == [] and empty is not codec.decode_progress_producer_claims(b'', ())
+    for role in ('connector', 'operation_worker', 'owned_service'):
+        # Gaps/start>1, stage/time order and repeated IDs remain unchecked.
+        # Matching runtime claims do not establish their provenance.
+        records = [dict(_progress(role), sample_sequence=2, stage='closed',
+                        observed_monotonic_ns=100, runtime_lock_sha256='b' * 64),
+                   dict(_progress(role), sample_sequence=16, stage='prepared',
+                        observed_monotonic_ns=1, runtime_lock_sha256='b' * 64)]
+        frame = _producer_frame(records)
+        first = codec.decode_progress_producer_claims(frame, (_progress_args(),) * 2)
+        second = codec.decode_progress_producer_claims(frame, (_progress_args(),) * 2)
+        assert first == second == records and first is not second
+        assert all(type(a) is dict and a is not b for a, b in zip(first, second))
+        assert all(r['credential_reads'] is None for r in first)
+        first[0]['stage'] = 'changed'
+        first.pop()
+        assert second == records and _producer_frame(records) == frame
+    records = [dict(_progress(), sample_sequence=i) for i in range(1, 17)]
+    assert codec.decode_progress_producer_claims(_producer_frame(records), (_progress_args(),) * 16) == records
+
+
+def test_progress_producer_claims_identity_and_count():
+    # Each mutation is intrinsically valid, including the independently supplied
+    # expected owner/op/graph IDs; only the cross-record agreement is false.
+    for field, value, expected_index in (
+            ('owner_id', OTHER, 0), ('operation_id', OTHER, 1), ('graph_id', OTHER, 2),
+            ('issuer_instance_id', OTHER, None), ('session_id', SUBJECT, None),
+            ('clock_epoch_id', SUBJECT, None), ('runtime_lock_sha256', 'b' * 64, None)):
+        records = [_progress(), dict(_progress(), sample_sequence=2, **{field: value})]
+        expected = list(_progress_args())
+        if expected_index is not None:
+            expected[expected_index] = value
+        plan = (_progress_args(), tuple(expected))
+        frame = _producer_frame(records)
+        assert codec.decode_progress_jsonl(frame, plan) == records
+        _reject(lambda: codec.decode_progress_producer_claims(frame, plan), 'invalid_result')
+    # Role and perspective cannot vary independently in a valid record.
+    for role in ('connector', 'owned_service'):
+        records = [_progress(), dict(_progress(role), sample_sequence=2)]
+        frame = _producer_frame(records)
+        assert codec.decode_progress_jsonl(frame, (_progress_args(),) * 2) == records
+        _reject(lambda: codec.decode_progress_producer_claims(frame, (_progress_args(),) * 2), 'invalid_result')
+    records = [dict(_progress(), sample_sequence=(i % 16) + 1) for i in range(17)]
+    frame = _producer_frame(records)
+    assert len(codec.decode_progress_jsonl(frame, (_progress_args(),) * 17)) == 17
+    _reject(lambda: codec.decode_progress_producer_claims(frame, (_progress_args(),) * 17), 'invalid_result')
+
+
+def test_progress_producer_claims_sequence_and_counters():
+    for sequences in ((1, 1), (2, 1), (1, 3, 2), (16, 16)):
+        records = [dict(_progress(), sample_sequence=n) for n in sequences]
+        _reject(lambda: codec.decode_progress_producer_claims(_producer_frame(records),
+                                                              (_progress_args(),) * len(records)), 'invalid_result')
+    # Independent existing fixture field sets cover all nine counters, across
+    # their permitted perspectives; no production counter table is an oracle.
+    covered = set()
+    for role, fields in PROG_KNOWN.items():
+        for field in fields:
+            covered.add(field)
+            for values, accepted in (((None, 0), True), ((0, 1, 1), True),
+                                     ((0, None, 1), True), ((1, None, 1), True),
+                                     ((None, None), True), ((0, None, 0), True),
+                                     ((1, 0), False), ((1, None, 0), False),
+                                     ((1, None, None, 0), False)):
+                records = [dict(_progress(role), sample_sequence=i + 1, **{field: value})
+                           for i, value in enumerate(values)]
+                frame = _producer_frame(records)
+                plan = (_progress_args(),) * len(records)
+                if accepted:
+                    decoded = codec.decode_progress_producer_claims(frame, plan)
+                    assert decoded == records and tuple(r[field] for r in decoded) == values
+                else:
+                    _reject(lambda: codec.decode_progress_producer_claims(frame, plan), 'invalid_result')
+                assert _producer_frame(records) == frame
+    assert len(covered) == 9
+
+
+def test_progress_producer_claims_delegation_and_precedence():
+    calls, returned = [], []
+    original = codec.decode_progress_jsonl
+    sha256 = codec.hashlib.sha256
+    def observed(frame, expected):
+        calls.append((frame, expected))
+        result = original(frame, expected)
+        returned.append(result)
+        return result
+    codec.decode_progress_jsonl = observed
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        frame, plan = PROG_CANONICAL_BYTES + b'\n', (_progress_args(),)
+        result = codec.decode_progress_producer_claims(frame, plan)
+        assert len(calls) == 1 and calls[0][0] is frame and calls[0][1] is plan
+        assert result is returned[-1] and result[0] is returned[-1][0]
+        assert codec.decode_progress_producer_claims(b'', ()) is returned[-1]
+        early_inconsistent = [_progress(), dict(_progress(), sample_sequence=1)]
+        for bad, expected, code in (
+                (b'{', [], 'invalid_shape'), (b'{', (('',) * 4,), 'invalid_value'),
+                (None, plan, 'invalid_shape'), (PROG_CANONICAL_BYTES, plan, 'invalid_encoding'),
+                (frame, (), 'invalid_result'), (frame, ((OTHER, SUBJECT, CUST_GRAPH, CUST_RECEIPT),), 'wrong_subject'),
+                (_producer_frame(early_inconsistent) + b'{}\n', plan * 3, 'invalid_shape'),
+                (_producer_frame(early_inconsistent + [dict(_progress(), sample_sequence=0)]), plan * 3, 'invalid_value'),
+                (_producer_frame(early_inconsistent + [dict(_progress(), record_id=OTHER)]), plan * 3, 'wrong_subject'),
+                (_producer_frame(early_inconsistent), plan * 2, 'invalid_result')):
+            before = len(calls)
+            error = _reject(lambda: codec.decode_progress_producer_claims(bad, expected), code)
+            assert len(calls) == before + 1
+            assert error.__cause__ is None and error.__context__ is None
+    finally:
+        codec.decode_progress_jsonl = original
         codec.hashlib.sha256 = sha256
