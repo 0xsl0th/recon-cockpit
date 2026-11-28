@@ -508,8 +508,8 @@ def test_exact_accepted_source_and_change_allowlist():
     s43_codec_files = {
         'recon_cockpit_synthetic/__init__.py': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         'recon_cockpit_synthetic/contract.py': 'c2864df6eb91c56d85851af35eb9ddca036144cff1fd5063265250d2d1e3823a',
-        'recon_cockpit_synthetic/codec.py': '49d54c6eb018fd2cb0eb4185f97b225f304bcb49dd0ec2630945d06f8d91941d',
-        'tests/test_secure_synthetic_custody_contract.py': '14e53a8946b260eb20fa4be2fc1206ba29ddd741876cce067b587ce9f8988f46',
+        'recon_cockpit_synthetic/codec.py': 'fe45c965e87bd96bbf6d63812dd888378058a453e2c95081d7fe378b6eec1f67',
+        'tests/test_secure_synthetic_custody_contract.py': '5d6ec7365fa190657576fd1fdb03e0163131ee0c61b77e515b60f8d51d389e06',
     }
     s43_codec_imports = {
         'recon_cockpit_synthetic/__init__.py': set(),

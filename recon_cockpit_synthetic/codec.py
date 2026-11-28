@@ -2736,3 +2736,60 @@ def decode_public_authority_jsonl(frame: bytes, expected_records: tuple) -> list
             record = decode_public_event(line, *expected[1:])
         records.append(record)
     return records
+
+
+def decode_public_physical_jsonl(frame: bytes, expected_records: tuple) -> list[dict]:
+    """Parse bounded physical JSONL with caller-selected intrinsic grammars.
+
+    Caller IDs prove no shared owner/operation/graph/session/runtime/epoch,
+    authentic producer, current kernel observation, registry membership, phase
+    uniqueness, deduplication, transfer resolution, receipt-set digest, reaping,
+    root-copy closure, graph coverage, recovery profile/allocation/eligibility
+    or complete witness. No hashing, file/SQLite access, manifest linkage,
+    reader/exporter, signal/authority, deadline reset, native execution or
+    acceptance; no autodetection or fallback.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['physical.jsonl']
+    if type(expected_records) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_records) > record_cap:
+        raise ResultCodecError('invalid_value')
+    decoders = {
+        'custody_receipt': decode_custody_receipt_record,
+        'descriptor_receipt': decode_descriptor_receipt_record,
+        'process_receipt': decode_process_receipt_record,
+        'termination_receipt': decode_termination_receipt_record,
+        'graph_closure_receipt': decode_graph_closure_receipt_record,
+        'recovery_closure_binding': decode_recovery_closure_binding_record,
+        'recovery_lifecycle': decode_recovery_lifecycle_record,
+        'recovery_prepared_receipt': decode_recovery_prepared_receipt_record,
+        'recovery_activate_receipt': decode_recovery_activate_receipt_record,
+        'recovery_challenge_receipt': decode_recovery_challenge_receipt_record,
+        'recovery_response_receipt': decode_recovery_response_receipt_record,
+        'recovery_refused_receipt': decode_recovery_refused_receipt_record,
+        'recovery_fixed_failure_receipt': decode_recovery_fixed_failure_receipt_record,
+    }
+    for expected in expected_records:
+        if type(expected) is not tuple or len(expected) != 5:
+            raise ResultCodecError('invalid_shape')
+        selector = expected[0]
+        if type(selector) is not str:
+            raise ResultCodecError('invalid_shape')
+        if selector not in decoders:
+            raise ResultCodecError('invalid_value')
+        _custody_receipt_subjects(*expected[1:])
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > 3072 for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_records):
+        raise ResultCodecError('invalid_result')
+    return [decoders[expected[0]](line, *expected[1:])
+            for line, expected in zip(lines, expected_records)]
