@@ -2526,3 +2526,38 @@ def decode_progress_jsonl(frame: bytes, expected_subjects: tuple) -> list[dict]:
         raise ResultCodecError('invalid_result')
     return [decode_progress_record(line, *expected)
             for line, expected in zip(lines, expected_subjects)]
+
+
+def decode_progress_producer_claims(frame: bytes, expected_subjects: tuple) -> list[dict]:
+    """Check sequence/counter consistency within one claimed producer identity.
+
+    Expected owner/operation/graph/record tuples follow decode_progress_jsonl.
+    Agreement authenticates no producer, registry/session/clock/runtime identity,
+    complete progress, milestone/interval coverage, closure or authority. Grouping,
+    aggregate48 compliance, recovery budgets and record-ID uniqueness remain
+    external. Empty claims are not a witness. No hashing, export or acceptance is
+    granted; nulls remain unknown and never reset a prior cumulative claim.
+    """
+    records = decode_progress_jsonl(frame, expected_subjects)
+    if len(records) > 16:
+        raise ResultCodecError('invalid_result')
+    if not records:
+        return records
+    fields = ('owner_id', 'operation_id', 'graph_id', 'issuer_instance_id', 'issuer_role',
+              'session_id', 'clock_epoch_id', 'runtime_lock_sha256', 'perspective')
+    identity = tuple(records[0][key] for key in fields)
+    previous_sequence = 0
+    last_known = {}
+    for record in records:
+        if tuple(record[key] for key in fields) != identity:
+            raise ResultCodecError('invalid_result')
+        if record['sample_sequence'] <= previous_sequence:
+            raise ResultCodecError('invalid_result')
+        previous_sequence = record['sample_sequence']
+        for key in contract.PROGRESS_COUNTER_FIELDS:
+            value = record[key]
+            if value is not None:
+                if key in last_known and value < last_known[key]:
+                    raise ResultCodecError('invalid_result')
+                last_known[key] = value
+    return records
