@@ -2561,3 +2561,38 @@ def decode_progress_producer_claims(frame: bytes, expected_subjects: tuple) -> l
                     raise ResultCodecError('invalid_result')
                 last_known[key] = value
     return records
+
+
+def decode_public_bindings_jsonl(frame: bytes, expected_subjects: tuple) -> list[dict]:
+    """Parse bounded public-binding framing with caller-supplied positional IDs.
+
+    Grammar proves no cross-record relationships, trusted identity, registry,
+    digest/manifest resolution, provenance, freshness, profile eligibility,
+    custody/closure, recovery authority or completed witness. Empty means zero
+    grammatical records. No hashing, file access, export or acceptance occurs.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['bindings.jsonl']
+    if type(expected_subjects) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_subjects) > record_cap:
+        raise ResultCodecError('invalid_value')
+    for expected in expected_subjects:
+        if type(expected) is not tuple or len(expected) != 2:
+            raise ResultCodecError('invalid_shape')
+        _expected_subject(expected[0])
+        _expected_subject(expected[1])
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > contract.PUBLIC_BINDING_MAX_BYTES for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_subjects):
+        raise ResultCodecError('invalid_result')
+    return [decode_public_binding_record(line, *expected)
+            for line, expected in zip(lines, expected_subjects)]
