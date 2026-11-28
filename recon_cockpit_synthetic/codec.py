@@ -2490,3 +2490,39 @@ def decode_public_result_member(manifest_frame: bytes, result_frame: bytes,
     if entry['sha256'] != hashlib.sha256(result_frame).hexdigest():
         raise ResultCodecError('invalid_result')
     return result
+
+
+def decode_progress_jsonl(frame: bytes, expected_subjects: tuple) -> list[dict]:
+    """Parse bounded framing and intrinsic progress claims with positional IDs.
+
+    Caller equality proves no authenticated chronology, producer/sample limits,
+    uniqueness, sequence/counter consistency, registry/session/clock/runtime
+    provenance, actual progress, interval coverage, remote delivery, physical
+    closure, recovery eligibility or authority. Empty means zero grammatical
+    records, never a valid witness. No file read/ownership, hashing, manifest or
+    bundle proof, reader/exporter or acceptance is granted.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['progress.jsonl']
+    if type(expected_subjects) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_subjects) > record_cap:
+        raise ResultCodecError('invalid_value')
+    for expected in expected_subjects:
+        if type(expected) is not tuple or len(expected) != 4:
+            raise ResultCodecError('invalid_shape')
+        _progress_subjects(*expected)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > contract.PROGRESS_MAX_BYTES for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_subjects):
+        raise ResultCodecError('invalid_result')
+    return [decode_progress_record(line, *expected)
+            for line, expected in zip(lines, expected_subjects)]

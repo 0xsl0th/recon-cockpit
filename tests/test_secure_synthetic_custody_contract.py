@@ -1,4 +1,4 @@
-"""One hundred sixty-eight codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred seventy-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -8873,4 +8873,158 @@ def test_public_result_member_validation_precedence():
     finally:
         codec.decode_public_manifest_claims = manifest_decode
         codec.decode_public_result = result_decode
+        codec.hashlib.sha256 = sha256
+
+
+def test_progress_jsonl_canonical_examples():
+    assert codec.decode_progress_jsonl(PROG_CANONICAL_BYTES + b'\n', (_progress_args(),)) == [_progress()]
+    empty = codec.decode_progress_jsonl(b'', ())
+    assert empty == [] and empty is not codec.decode_progress_jsonl(b'', ())
+    expected = ((CUST_OWNER, SUBJECT, CUST_GRAPH, CUST_RECEIPT),
+                (CUST_OWNER, SUBJECT, OTHER, SUBJECT),
+                (OTHER, CUST_OWNER, SUBJECT, OTHER))
+    records = [dict(_progress(role), owner_id=owner, operation_id=operation,
+                    graph_id=graph, record_id=record)
+               for role, (owner, operation, graph, record) in
+               zip(('connector', 'operation_worker', 'owned_service'), expected)]
+    frame = b''.join(_wire(r) + b'\n' for r in records)
+    first = codec.decode_progress_jsonl(frame, expected)
+    second = codec.decode_progress_jsonl(frame, expected)
+    assert type(first) is list and first == second == records and first is not second
+    assert all(type(a) is dict and a is not b for a, b in zip(first, second))
+    first[0]['stage'] = 'changed'
+    first.pop()
+    assert second == records and frame == b''.join(_wire(r) + b'\n' for r in records)
+    # Repeated IDs/sequence16 are deliberately not a valid producer history.
+    # 64 is only the structural ceiling, not the three-producer48 limit.
+    maximum = _progress_maximum('operation_worker')
+    frame = (_wire(maximum) + b'\n') * 64
+    assert len(frame) == 59136  # 64 * (923 canonical bytes + one LF).
+    result = codec.decode_progress_jsonl(frame, (_progress_args(),) * 64)
+    assert len(result) == 64 and all(r == maximum for r in result)
+    assert result[0] is not result[-1]
+
+
+def test_progress_jsonl_expected_subjects():
+    class HostileTuple(tuple):
+        __len__ = __iter__ = __getitem__ = _pm_bomb
+    class HostileString(str):
+        __len__ = _pm_bomb
+    original = codec.decode_progress_record
+    codec.decode_progress_record = _pm_bomb
+    try:
+        for expected in (None, True, {}, [], iter(()), HostileTuple(())):
+            _reject(lambda: codec.decode_progress_jsonl(b'{', expected), 'invalid_shape')
+        _reject(lambda: codec.decode_progress_jsonl(b'{', ((),) * 65), 'invalid_value')
+        for row in (None, [], {}, (), (SUBJECT,), (SUBJECT,) * 3, (SUBJECT,) * 5,
+                    HostileTuple(_progress_args())):
+            _reject(lambda: codec.decode_progress_jsonl(b'{', (row,)), 'invalid_shape')
+        for index in range(4):
+            for value, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                                (HostileString(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                                (SUBJECT.upper(), 'invalid_value')):
+                row = list(_progress_args())
+                row[index] = value
+                _reject(lambda: codec.decode_progress_jsonl(b'{', (_progress_args(), tuple(row))), code)
+        for row, code in (((None, '', SUBJECT, SUBJECT), 'invalid_shape'),
+                           (('', None, SUBJECT, SUBJECT), 'invalid_value')):
+            _reject(lambda: codec.decode_progress_jsonl(None, (row,)), code)
+        _reject(lambda: codec.decode_progress_jsonl(None, (('',) * 4, (None,) * 4)), 'invalid_value')
+        for frame, expected in ((b'', (_progress_args(),)),
+                                (PROG_CANONICAL_BYTES + b'\n', ()),
+                                (PROG_CANONICAL_BYTES + b'\n', (_progress_args(),) * 2)):
+            _reject(lambda: codec.decode_progress_jsonl(frame, expected), 'invalid_result')
+    finally:
+        codec.decode_progress_record = original
+    for index in range(4):
+        row = list(_progress_args())
+        row[index] = OTHER
+        _reject(lambda: codec.decode_progress_jsonl(PROG_CANONICAL_BYTES + b'\n', (tuple(row),)),
+                'wrong_subject')
+
+
+def test_progress_jsonl_framing_and_bounds():
+    calls = []
+    original = codec.decode_progress_record
+    def observed(frame, *expected):
+        calls.append(frame)
+        return original(frame, *expected)
+    codec.decode_progress_record = observed
+    try:
+        class HostileBytes(bytes):
+            __len__ = isascii = endswith = count = _pm_bomb
+        for frame in (None, '', bytearray(PROG_CANONICAL_BYTES), memoryview(PROG_CANONICAL_BYTES),
+                      HostileBytes(PROG_CANONICAL_BYTES)):
+            _reject(lambda: codec.decode_progress_jsonl(frame, (_progress_args(),)), 'invalid_shape')
+            assert not calls
+        for frame in (PROG_CANONICAL_BYTES, PROG_CANONICAL_BYTES + b'\r\n',
+                      b'\r' + PROG_CANONICAL_BYTES + b'\n', b'\xef\xbb\xbf' + PROG_CANONICAL_BYTES + b'\n',
+                      b'\xff\n', b'\n', b'\n' + PROG_CANONICAL_BYTES + b'\n',
+                      PROG_CANONICAL_BYTES + b'\n\n', b'x' * 65536 + b'\n', b'{}\n' * 65,
+                      b'x' * 3073 + b'\n', PROG_CANONICAL_BYTES + b'\n' + b'x' * 3073 + b'\n'):
+            _reject(lambda: codec.decode_progress_jsonl(frame, (_progress_args(),)), 'invalid_encoding')
+            assert not calls
+        # Exact bounds reach typed decoding; these are malformed, not valid
+        # 3072-byte objects or valid 65536-byte typed progress files.
+        for frame, expected in ((b'x' * 3072 + b'\n', (_progress_args(),)),
+                                ((b'x' * 1023 + b'\n') * 64, (_progress_args(),) * 64)):
+            calls.clear()
+            _reject(lambda: codec.decode_progress_jsonl(frame, expected), 'invalid_encoding')
+            assert len(calls) == 1
+        for frame, code in ((b' ' + PROG_CANONICAL_BYTES + b'\n', 'invalid_encoding'),
+                            (PROG_CANONICAL_BYTES + b' \n', 'invalid_encoding'),
+                            (PROG_CANONICAL_BYTES + b'\v\n', 'invalid_encoding'),
+                            (PROG_CANONICAL_BYTES.replace(b'"prepared"', b'"pre\\npared"') + b'\n', 'invalid_value')):
+            calls.clear()
+            _reject(lambda: codec.decode_progress_jsonl(frame, (_progress_args(),)), code)
+            assert len(calls) == 1
+        calls.clear()
+        physical_lf = PROG_CANONICAL_BYTES.replace(b'"prepared"', b'"pre\npared"') + b'\n'
+        _reject(lambda: codec.decode_progress_jsonl(physical_lf, (_progress_args(),)), 'invalid_result')
+        assert not calls  # The physical LF is a second record delimiter.
+    finally:
+        codec.decode_progress_record = original
+
+
+def test_progress_jsonl_delegation_and_precedence():
+    calls, returned = [], []
+    original = codec.decode_progress_record
+    sha256 = codec.hashlib.sha256
+    def observed(frame, *expected):
+        calls.append((frame, expected))
+        record = original(frame, *expected)
+        returned.append(record)
+        return record
+    codec.decode_progress_record = observed
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        first = PROG_CANONICAL_BYTES
+        second = _wire(dict(_progress(), sample_sequence=2, record_id=OTHER))
+        expected = (_progress_args(), (CUST_OWNER, SUBJECT, CUST_GRAPH, OTHER))
+        result = codec.decode_progress_jsonl(first + b'\n' + second + b'\n', expected)
+        assert calls == [(first, expected[0]), (second, expected[1])]
+        assert result == returned and result is not returned
+        assert all(a is b for a, b in zip(result, returned))
+        calls.clear()
+        # Intrinsic parsing does not establish increasing sample chronology.
+        reversed_result = codec.decode_progress_jsonl(second + b'\n' + first + b'\n', tuple(reversed(expected)))
+        assert [r['sample_sequence'] for r in reversed_result] == [2, 1]
+        for frame, plan, code, count in (
+                (b'{', (('',) * 4,), 'invalid_value', 0),
+                (first + b'\n\n', (), 'invalid_encoding', 0),
+                (first + b'\n', (), 'invalid_result', 0),
+                (first + b'\n' + b' ' + second + b'\n', expected, 'invalid_encoding', 2),
+                (first + b'\n' + second + b'\n' + first + b'\n',
+                 (expected[0], expected[0], expected[0]), 'wrong_subject', 2),
+                (_wire(dict(_progress(), private='RAW_SENTINEL')) + b'\n' + first + b'\n',
+                 (expected[0], expected[0]), 'invalid_shape', 1),
+                (_wire(dict(_progress(), perspective='server_local')) + b'\n',
+                 (expected[0],), 'invalid_result', 1)):
+            calls.clear()
+            error = _reject(lambda: codec.decode_progress_jsonl(frame, plan), code)
+            assert len(calls) == count
+            assert error.__cause__ is None and error.__context__ is None
+        assert codec.decode_progress_jsonl(b'', ()) == []
+    finally:
+        codec.decode_progress_record = original
         codec.hashlib.sha256 = sha256
