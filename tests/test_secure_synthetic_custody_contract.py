@@ -1,4 +1,4 @@
-"""One hundred seventy-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred eighty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9146,4 +9146,152 @@ def test_progress_producer_claims_delegation_and_precedence():
             assert error.__cause__ is None and error.__context__ is None
     finally:
         codec.decode_progress_jsonl = original
+        codec.hashlib.sha256 = sha256
+
+
+def test_public_bindings_jsonl_canonical_examples():
+    assert codec.decode_public_bindings_jsonl(PUBB_CANONICAL_BYTES + b'\n', (_public_binding_args(),)) == [_public_binding()]
+    empty = codec.decode_public_bindings_jsonl(b'', ())
+    assert empty == [] and empty is not codec.decode_public_bindings_jsonl(b'', ())
+    expected = tuple((SUBJECT if i % 2 else OTHER, PUBB_IDS[i]) for i in range(5))
+    records = [dict(_public_binding(), kind=kind, subject_id=subject, record_id=record)
+               for kind, (subject, record) in zip(PUBB_KINDS, expected)]
+    frame = b''.join(_wire(record) + b'\n' for record in records)
+    first = codec.decode_public_bindings_jsonl(frame, expected)
+    second = codec.decode_public_bindings_jsonl(frame, expected)
+    assert type(first) is list and first == second == records and first is not second
+    assert all(type(a) is dict and a is not b and type(a['related_ids']) is list
+               and a['related_ids'] is not b['related_ids'] for a, b in zip(first, second))
+    first[0]['related_ids'].clear()
+    first[0]['kind'] = 'changed'
+    first.pop()
+    assert second == records and frame == b''.join(_wire(record) + b'\n' for record in records)
+    # Repeated records and unproved public digest claims remain grammatical.
+    maximum = dict(_public_binding(), kind='source_manifest', related_ids=list(PUBB_IDS))
+    assert len(_wire(maximum)) == 707
+    frame = (_wire(maximum) + b'\n') * 64
+    assert len(frame) == 45312
+    result = codec.decode_public_bindings_jsonl(frame, (_public_binding_args(),) * 64)
+    assert len(result) == 64 and all(record == maximum for record in result)
+    assert result[0] is not result[-1] and result[0]['related_ids'] is not result[-1]['related_ids']
+
+
+def test_public_bindings_jsonl_expected_subjects():
+    class HostileTuple(tuple):
+        __len__ = __iter__ = __getitem__ = _pm_bomb
+    class HostileString(str):
+        __len__ = _pm_bomb
+    original = codec.decode_public_binding_record
+    codec.decode_public_binding_record = _pm_bomb
+    try:
+        for expected in (None, True, {}, [], iter(()), HostileTuple(())):
+            _reject(lambda: codec.decode_public_bindings_jsonl(b'{', expected), 'invalid_shape')
+        _reject(lambda: codec.decode_public_bindings_jsonl(b'{', (HostileTuple(()),) * 65), 'invalid_value')
+        for row in (None, [], {}, (), (SUBJECT,), (SUBJECT,) * 3, HostileTuple(_public_binding_args())):
+            _reject(lambda: codec.decode_public_bindings_jsonl(b'{', (row,)), 'invalid_shape')
+        for index in range(2):
+            for value, code in ((None, 'invalid_shape'), (True, 'invalid_shape'),
+                                (HostileString(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                                ('not-a-uuid', 'invalid_value'), (SUBJECT.upper(), 'invalid_value')):
+                row = list(_public_binding_args())
+                row[index] = value
+                _reject(lambda: codec.decode_public_bindings_jsonl(None, (_public_binding_args(), tuple(row))), code)
+        for row, code in (((None, ''), 'invalid_shape'), (('', None), 'invalid_value')):
+            _reject(lambda: codec.decode_public_bindings_jsonl(None, (row,)), code)
+        _reject(lambda: codec.decode_public_bindings_jsonl(None, (('', OTHER), (None, OTHER))), 'invalid_value')
+        for frame, expected in ((b'', (_public_binding_args(),)),
+                                (PUBB_CANONICAL_BYTES + b'\n', ()),
+                                (PUBB_CANONICAL_BYTES + b'\n', (_public_binding_args(),) * 2)):
+            _reject(lambda: codec.decode_public_bindings_jsonl(frame, expected), 'invalid_result')
+    finally:
+        codec.decode_public_binding_record = original
+    for row in ((OTHER, OTHER), (SUBJECT, SUBJECT)):
+        _reject(lambda: codec.decode_public_bindings_jsonl(PUBB_CANONICAL_BYTES + b'\n', (row,)), 'wrong_subject')
+
+
+def test_public_bindings_jsonl_framing_and_bounds():
+    calls = []
+    original = codec.decode_public_binding_record
+    def observed(frame, *expected):
+        calls.append(frame)
+        return original(frame, *expected)
+    codec.decode_public_binding_record = observed
+    try:
+        class HostileBytes(bytes):
+            __len__ = isascii = endswith = count = _pm_bomb
+        for frame in (None, '', bytearray(PUBB_CANONICAL_BYTES), memoryview(PUBB_CANONICAL_BYTES),
+                      HostileBytes(PUBB_CANONICAL_BYTES)):
+            _reject(lambda: codec.decode_public_bindings_jsonl(frame, (_public_binding_args(),)), 'invalid_shape')
+            assert not calls
+        for frame in (PUBB_CANONICAL_BYTES, PUBB_CANONICAL_BYTES + b'\r\n',
+                      b'\r' + PUBB_CANONICAL_BYTES + b'\n', b'\xef\xbb\xbf' + PUBB_CANONICAL_BYTES + b'\n',
+                      b'\xff\n', b'\n', b'\n' + PUBB_CANONICAL_BYTES + b'\n',
+                      PUBB_CANONICAL_BYTES + b'\n\n', b'x' * 131072 + b'\n', b'{}\n' * 65,
+                      b'x' * 3073 + b'\n', PUBB_CANONICAL_BYTES + b'\n' + b'x' * 3073 + b'\n'):
+            _reject(lambda: codec.decode_public_bindings_jsonl(frame, (_public_binding_args(),)), 'invalid_encoding')
+            assert not calls
+        # Exact ceilings reach typed decoding; these are explicitly malformed
+        # bytes, not valid canonical3072-byte objects or131072-byte files.
+        for frame, expected in ((b'x' * 3072 + b'\n', (_public_binding_args(),)),
+                                ((b'x' * 2047 + b'\n') * 64, (_public_binding_args(),) * 64)):
+            calls.clear()
+            _reject(lambda: codec.decode_public_bindings_jsonl(frame, expected), 'invalid_encoding')
+            assert len(calls) == 1
+        for frame, code in ((b' ' + PUBB_CANONICAL_BYTES + b'\n', 'invalid_encoding'),
+                            (PUBB_CANONICAL_BYTES + b' \n', 'invalid_encoding'),
+                            (PUBB_CANONICAL_BYTES + b'\v\n', 'invalid_encoding'),
+                            (PUBB_CANONICAL_BYTES.replace(b'"runtime"', b'"run\\ntime"') + b'\n', 'invalid_value')):
+            calls.clear()
+            _reject(lambda: codec.decode_public_bindings_jsonl(frame, (_public_binding_args(),)), code)
+            assert len(calls) == 1
+        calls.clear()
+        physical_lf = PUBB_CANONICAL_BYTES.replace(b'"runtime"', b'"run\ntime"') + b'\n'
+        _reject(lambda: codec.decode_public_bindings_jsonl(physical_lf, (_public_binding_args(),)), 'invalid_result')
+        assert not calls
+    finally:
+        codec.decode_public_binding_record = original
+
+
+def test_public_bindings_jsonl_delegation_and_precedence():
+    calls, returned = [], []
+    original = codec.decode_public_binding_record
+    sha256 = codec.hashlib.sha256
+    def observed(frame, *expected):
+        calls.append((frame, expected))
+        record = original(frame, *expected)
+        returned.append(record)
+        return record
+    codec.decode_public_binding_record = observed
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        first = PUBB_CANONICAL_BYTES
+        second = _wire(dict(_public_binding(), kind='graph', record_id=SUBJECT))
+        expected = (_public_binding_args(), (SUBJECT, SUBJECT))
+        result = codec.decode_public_bindings_jsonl(first + b'\n' + second + b'\n', expected)
+        assert calls == [(first, expected[0]), (second, expected[1])]
+        assert result == returned and result is not returned
+        assert all(a is b and a['related_ids'] is b['related_ids'] for a, b in zip(result, returned))
+        calls.clear()
+        reversed_result = codec.decode_public_bindings_jsonl(second + b'\n' + first + b'\n', tuple(reversed(expected)))
+        assert [record['kind'] for record in reversed_result] == ['graph', 'runtime']
+        for frame, plan, code, count in (
+                (b'{', (('', OTHER),), 'invalid_value', 0),
+                (first + b'\n\n', (), 'invalid_encoding', 0),
+                (b'{}\n', (), 'invalid_result', 0),
+                (first + b'\n' + b' ' + second + b'\n', expected, 'invalid_encoding', 2),
+                (first + b'\n' + second + b'\n' + first + b'\n',
+                 (expected[0], expected[0], expected[0]), 'wrong_subject', 2),
+                (_wire(dict(_public_binding(), private='RAW_SENTINEL')) + b'\n' + first + b'\n',
+                 (expected[0], expected[0]), 'invalid_shape', 1),
+                (_wire(dict(_public_binding(), related_ids=[SUBJECT, SUBJECT])) + b'\n',
+                 (expected[0],), 'invalid_value', 1),
+                (_wire(dict(_public_binding(), related_ids=None)) + b'\n', (expected[0],), 'invalid_shape', 1),
+                (_wire(dict(_public_binding(), related_ids=[None])) + b'\n', (expected[0],), 'invalid_value', 1)):
+            calls.clear()
+            error = _reject(lambda: codec.decode_public_bindings_jsonl(frame, plan), code)
+            assert len(calls) == count
+            assert error.__cause__ is None and error.__context__ is None and 'RAW_SENTINEL' not in str(error)
+        assert codec.decode_public_bindings_jsonl(b'', ()) == []
+    finally:
+        codec.decode_public_binding_record = original
         codec.hashlib.sha256 = sha256
