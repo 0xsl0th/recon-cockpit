@@ -1,4 +1,4 @@
-"""One hundred eighty codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred eighty-four codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9294,4 +9294,189 @@ def test_public_bindings_jsonl_delegation_and_precedence():
         assert codec.decode_public_bindings_jsonl(b'', ()) == []
     finally:
         codec.decode_public_binding_record = original
+        codec.hashlib.sha256 = sha256
+
+
+def test_public_observations_jsonl_canonical_examples():
+    single = _wire(_observation())
+    assert len(single) <= 3072
+    assert codec.decode_public_observations_jsonl(single + b'\n', (_observation_args(),)) == [_observation()]
+    empty = codec.decode_public_observations_jsonl(b'', ())
+    assert empty == [] and empty is not codec.decode_public_observations_jsonl(b'', ())
+    kinds = ('action_prepared', 'approval_recorded', 'graph_closed', 'pre_write_reached',
+             'result_released', 'tls_verified', 'graph_closed')
+    expected, records = [], []
+    for i, kind in enumerate(kinds):
+        owner = i == 6
+        row = _observation_args(kind, owner)
+        expected.append((PUBB_IDS[i], row[1], row[2], PUBB_IDS[i + 1]))
+        records.append(dict(_observation(kind, owner), engagement_id=PUBB_IDS[i],
+                            reference_id=PUBB_IDS[i + 1], observed_monotonic_ns=100 - i))
+    expected = tuple(expected)
+    assert all(len(_wire(record)) <= 3072 for record in records)
+    assert all(record['observer_owner_id'] != record['subject_owner_id'] for record in records)
+    frame = b''.join(_wire(record) + b'\n' for record in records)
+    first = codec.decode_public_observations_jsonl(frame, expected)
+    second = codec.decode_public_observations_jsonl(frame, expected)
+    assert type(first) is list and first == second == records and first is not second
+    assert all(type(a) is dict and a is not b and type(a['payload']) is dict
+               and a['payload'] is not b['payload'] for a, b in zip(first, second))
+    assert first[4]['payload']['result'] is not second[4]['payload']['result']
+    first[4]['payload']['result']['outcome'] = 'changed'
+    first[0]['payload'].clear()
+    first.pop()
+    assert second == records and frame == b''.join(_wire(record) + b'\n' for record in records)
+    # Repeated references and mixed grammatical subjects establish no history.
+    result = codec.decode_public_observations_jsonl((single + b'\n') * 32, (_observation_args(),) * 32)
+    assert len(result) == 32 and all(record == _observation() for record in result)
+    assert result[0] is not result[-1] and result[0]['payload'] is not result[-1]['payload']
+
+
+def test_public_observations_jsonl_expected_subjects():
+    class HostileTuple(tuple):
+        __len__ = __iter__ = __getitem__ = _pm_bomb
+    class HostileString(str):
+        __len__ = _pm_bomb
+    original = codec.decode_observation_record
+    codec.decode_observation_record = _pm_bomb
+    single = _wire(_observation()) + b'\n'
+    try:
+        for expected in (None, True, {}, [], iter(()), HostileTuple(())):
+            _reject(lambda: codec.decode_public_observations_jsonl(b'{', expected), 'invalid_shape')
+        _reject(lambda: codec.decode_public_observations_jsonl(b'{', (HostileTuple(()),) * 33), 'invalid_value')
+        for row in (None, [], {}, (), (SUBJECT,), (SUBJECT,) * 3, (SUBJECT,) * 5,
+                    HostileTuple(_observation_args())):
+            _reject(lambda: codec.decode_public_observations_jsonl(b'{', (row,)), 'invalid_shape')
+        for index in range(4):
+            cases = [(True, 'invalid_shape'), (HostileString(SUBJECT), 'invalid_shape'),
+                     ('', 'invalid_value'), ('not-a-uuid', 'invalid_value'), (SUBJECT.upper(), 'invalid_value')]
+            if index in (0, 3):
+                cases.append((None, 'invalid_shape'))
+            for value, code in cases:
+                row = list(_observation_args())
+                row[index] = value
+                _reject(lambda: codec.decode_public_observations_jsonl(None, (_observation_args(), tuple(row))), code)
+        # Engagement, reference, nullability, then non-null operation and lease.
+        for row, code in (
+                ((None, '', None, ''), 'invalid_shape'),
+                (('', None, OBS_LEASE, None), 'invalid_value'),
+                ((OBS_ENGAGEMENT, '', None, None), 'invalid_shape'),
+                ((OBS_ENGAGEMENT, None, True, ''), 'invalid_value'),
+                ((OBS_ENGAGEMENT, None, '', OBS_REFERENCE), 'invalid_shape'),
+                ((OBS_ENGAGEMENT, '', True, OBS_REFERENCE), 'invalid_value'),
+                ((OBS_ENGAGEMENT, True, '', OBS_REFERENCE), 'invalid_shape')):
+            _reject(lambda: codec.decode_public_observations_jsonl(None, (row,)), code)
+        for row in ((OBS_ENGAGEMENT, SUBJECT, None, OBS_REFERENCE),
+                    (OBS_ENGAGEMENT, None, None, OBS_REFERENCE)):
+            _reject(lambda: codec.decode_public_observations_jsonl(b'', (row,)), 'invalid_result')
+        for frame, expected in ((b'', (_observation_args(),)), (single, ()),
+                                (single, (_observation_args(),) * 2)):
+            _reject(lambda: codec.decode_public_observations_jsonl(frame, expected), 'invalid_result')
+    finally:
+        codec.decode_observation_record = original
+    for index in range(4):
+        row = list(_observation_args())
+        row[index] = OTHER
+        _reject(lambda: codec.decode_public_observations_jsonl(single, (tuple(row),)), 'wrong_subject')
+    _reject(lambda: codec.decode_public_observations_jsonl(single, ((OBS_ENGAGEMENT, None, None, OBS_REFERENCE),)),
+            'wrong_subject')
+
+
+def test_public_observations_jsonl_framing_and_bounds():
+    calls = []
+    original = codec.decode_observation_record
+    def observed(frame, *expected):
+        calls.append(frame)
+        return original(frame, *expected)
+    codec.decode_observation_record = observed
+    single = _wire(_observation())
+    try:
+        class HostileBytes(bytes):
+            __len__ = isascii = endswith = count = _pm_bomb
+        for frame in (None, '', bytearray(single), memoryview(single), HostileBytes(single)):
+            _reject(lambda: codec.decode_public_observations_jsonl(frame, (_observation_args(),)), 'invalid_shape')
+            assert not calls
+        for frame in (single, single + b'\r\n', b'\r' + single + b'\n',
+                      b'\xef\xbb\xbf' + single + b'\n', b'\xff\n', b'\n', b'\n' + single + b'\n',
+                      single + b'\n\n', b'x' * 131072 + b'\n', b'{}\n' * 33,
+                      b'x' * 3073 + b'\n', single + b'\n' + b'x' * 3073 + b'\n'):
+            _reject(lambda: codec.decode_public_observations_jsonl(frame, (_observation_args(),)), 'invalid_encoding')
+            assert not calls
+        # Exact member bytes cannot meet both public line/count limits.
+        full_member = (b'x' * 4095 + b'\n') * 32
+        assert len(full_member) == 131072
+        _reject(lambda: codec.decode_public_observations_jsonl(full_member, (_observation_args(),) * 32),
+                'invalid_encoding')
+        assert not calls
+        # Explicitly malformed bytes, not valid canonical records or witnesses.
+        structural_maximum = (b'x' * 3072 + b'\n') * 32
+        assert len(structural_maximum) == 98336
+        for frame, expected in ((b'x' * 3072 + b'\n', (_observation_args(),)),
+                                (structural_maximum, (_observation_args(),) * 32)):
+            calls.clear()
+            _reject(lambda: codec.decode_public_observations_jsonl(frame, expected), 'invalid_encoding')
+            assert len(calls) == 1
+        for frame, code in ((b' ' + single + b'\n', 'invalid_encoding'),
+                            (single + b' \n', 'invalid_encoding'), (single + b'\v\n', 'invalid_encoding'),
+                            (single.replace(b'"tls_verified"', b'"tls_\\nverified"') + b'\n', 'invalid_value')):
+            calls.clear()
+            _reject(lambda: codec.decode_public_observations_jsonl(frame, (_observation_args(),)), code)
+            assert len(calls) == 1
+        calls.clear()
+        literal_lf = single.replace(b'"tls_verified"', b'"tls_\nverified"') + b'\n'
+        _reject(lambda: codec.decode_public_observations_jsonl(literal_lf, (_observation_args(),)), 'invalid_result')
+        assert not calls
+    finally:
+        codec.decode_observation_record = original
+
+
+def test_public_observations_jsonl_delegation_and_precedence():
+    calls, returned = [], []
+    original = codec.decode_observation_record
+    sha256 = codec.hashlib.sha256
+    def observed(frame, *expected):
+        calls.append((frame, expected))
+        record = original(frame, *expected)
+        returned.append(record)
+        return record
+    codec.decode_observation_record = observed
+    codec.hashlib.sha256 = _pm_bomb
+    try:
+        first = _wire(_observation())
+        second = _wire(dict(_observation('result_released'), reference_id=OTHER))
+        expected = (_observation_args(), (OBS_ENGAGEMENT, SUBJECT, OBS_LEASE, OTHER))
+        result = codec.decode_public_observations_jsonl(first + b'\n' + second + b'\n', expected)
+        assert calls == [(first, expected[0]), (second, expected[1])]
+        assert result == returned and result is not returned
+        assert all(a is b and a['payload'] is b['payload'] for a, b in zip(result, returned))
+        assert result[1]['payload']['result'] is returned[1]['payload']['result']
+        calls.clear()
+        reversed_result = codec.decode_public_observations_jsonl(second + b'\n' + first + b'\n', tuple(reversed(expected)))
+        assert [record['kind'] for record in reversed_result] == ['result_released', 'tls_verified']
+        approval = _observation('approval_recorded')
+        approval['payload']['reviewed_action_sha256'] = 'b' * 64
+        nested = _observation('result_released')
+        nested['payload']['result']['operation_id'] = OTHER
+        closure = _observation('graph_closed')
+        closure['payload']['descriptors_closed'] = False
+        for frame, plan, code, count in (
+                (b'{', (('', SUBJECT, OBS_LEASE, OBS_REFERENCE),), 'invalid_value', 0),
+                (first + b'\n\n', (), 'invalid_encoding', 0), (b'{}\n', (), 'invalid_result', 0),
+                (first + b'\n' + b' ' + second + b'\n', expected, 'invalid_encoding', 2),
+                (first + b'\n' + second + b'\n' + first + b'\n', (expected[0],) * 3, 'wrong_subject', 2),
+                (_wire(dict(_observation(), private='RAW_SENTINEL')) + b'\n' + first + b'\n',
+                 (expected[0],) * 2, 'invalid_shape', 1),
+                (_wire(dict(_observation(), issuer_role='broker')) + b'\n', (expected[0],), 'invalid_result', 1),
+                (_wire(dict(_observation(), lease_id=None)) + b'\n',
+                 ((OBS_ENGAGEMENT, SUBJECT, None, OBS_REFERENCE),), 'invalid_result', 1),
+                (_wire(approval) + b'\n', (_observation_args('approval_recorded'),), 'invalid_result', 1),
+                (_wire(nested) + b'\n', (expected[0],), 'invalid_result', 1),
+                (_wire(closure) + b'\n', (expected[0],), 'invalid_value', 1)):
+            calls.clear()
+            error = _reject(lambda: codec.decode_public_observations_jsonl(frame, plan), code)
+            assert len(calls) == count
+            assert error.__cause__ is None and error.__context__ is None and 'RAW_SENTINEL' not in str(error)
+        assert codec.decode_public_observations_jsonl(b'', ()) == []
+    finally:
+        codec.decode_observation_record = original
         codec.hashlib.sha256 = sha256
