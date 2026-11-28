@@ -1,4 +1,4 @@
-"""One hundred ninety-two codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
+"""One hundred ninety-six codec unit nodes; these do not satisfy any formal S4.3 acceptance node."""
 
 import json
 
@@ -9928,3 +9928,273 @@ def test_public_authority_jsonl_delegation_and_precedence():
     finally:
         codec.decode_public_roe, codec.decode_public_lease, codec.decode_public_event = originals
         codec.hashlib.sha256 = sha256
+
+
+def test_public_physical_jsonl_canonical_examples():
+    cases = (
+        ('custody_receipt', lambda operation: _custody(operation=operation)),
+        ('descriptor_receipt', _descriptor),
+        ('process_receipt', _process),
+        ('termination_receipt', _termination),
+        ('graph_closure_receipt', _graph_closure),
+        ('recovery_closure_binding', _recovery_binding),
+        ('recovery_lifecycle', _recovery_lifecycle),
+        ('recovery_prepared_receipt', _recovery_prepared),
+        ('recovery_activate_receipt', _recovery_activate),
+        ('recovery_challenge_receipt', _recovery_challenge),
+        ('recovery_response_receipt', _recovery_response),
+        ('recovery_refused_receipt', _recovery_refused),
+        ('recovery_fixed_failure_receipt', _recovery_fixed_failure),
+    )
+    decode = codec.decode_public_physical_jsonl
+    assert decode(b'', ()) == [] and decode(b'', ()) is not decode(b'', ())
+    assert _wire(_graph_closure()) == GC_CANONICAL_BYTES
+    assert decode(GC_CANONICAL_BYTES + b'\n',
+                  (('graph_closure_receipt', *_graph_closure_args()),)) == [_graph_closure()]
+    records, expected = [], []
+    for selector, factory in cases:
+        for operation in (None, SUBJECT):
+            records.append(factory(operation))
+            expected.append((selector, CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT))
+    for operation in (None, SUBJECT):
+        records.append(_custody('source_custody', operation))
+        expected.append(('custody_receipt', CUST_OWNER, operation, CUST_GRAPH, CUST_RECEIPT))
+    distinct = dict(_custody(), subject_owner_id=OTHER, operation_id=OTHER,
+                    graph_id=SUBJECT, receipt_id=SUBJECT)
+    records.extend([distinct, _custody(), _custody()])
+    expected.extend([('custody_receipt', OTHER, OTHER, SUBJECT, SUBJECT),
+                     ('custody_receipt', *_custody_args()), ('custody_receipt', *_custody_args())])
+    expected = tuple(expected)
+    lines = tuple(_wire(record) for record in records)
+    assert all(len(line) <= 3072 for line in lines)
+    frame = b''.join(line + b'\n' for line in lines)
+    first, second = decode(frame, expected), decode(frame, expected)
+    assert first == second == records and first is not second
+    for a, b, source in zip(first, second, records):
+        assert a is not b and a is not source
+        assert a['payload'] is not b['payload'] and a['payload'] is not source['payload']
+        for key, value in source['payload'].items():
+            if type(value) is list:
+                assert a['payload'][key] is not b['payload'][key]
+                assert a['payload'][key] is not value
+                a['payload'][key].clear()
+    first[0]['payload'].clear()
+    first[-1]['receipt_id'] = 'mutated'
+    assert second == records and tuple(_wire(record) for record in records) == lines
+    assert decode(b''.join(line + b'\n' for line in reversed(lines)),
+                  tuple(reversed(expected))) == list(reversed(records))
+    line = _wire(_custody()) + b'\n'
+    assert len(line) * 1075 <= 3145728
+    many = decode(line * 1075, (('custody_receipt', *_custody_args()),) * 1075)
+    assert many == [_custody()] * 1075 and len({id(record) for record in many}) == 1075
+    assert len({id(record['payload']) for record in many}) == 1075
+
+
+def test_public_physical_jsonl_expected_records():
+    cases = (
+        ('custody_receipt', lambda operation: _custody(operation=operation)),
+        ('descriptor_receipt', _descriptor),
+        ('process_receipt', _process),
+        ('termination_receipt', _termination),
+        ('graph_closure_receipt', _graph_closure),
+        ('recovery_closure_binding', _recovery_binding),
+        ('recovery_lifecycle', _recovery_lifecycle),
+        ('recovery_prepared_receipt', _recovery_prepared),
+        ('recovery_activate_receipt', _recovery_activate),
+        ('recovery_challenge_receipt', _recovery_challenge),
+        ('recovery_response_receipt', _recovery_response),
+        ('recovery_refused_receipt', _recovery_refused),
+        ('recovery_fixed_failure_receipt', _recovery_fixed_failure),
+    )
+    originals = (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record)
+    decode = codec.decode_public_physical_jsonl
+    class HostileTuple(tuple):
+        def __iter__(self): raise AssertionError('iteration hook')
+        def __len__(self): raise AssertionError('length hook')
+    class HostileStr(str):
+        def __hash__(self): raise AssertionError('hash hook')
+        def __eq__(self, other): raise AssertionError('equality hook')
+    row = ('custody_receipt', *_custody_args())
+    for value in (None, [], {}, iter(()), HostileTuple(())):
+        _reject(lambda: decode(object(), value), 'invalid_shape')
+    _reject(lambda: decode(object(), (HostileTuple(()),) * 1076), 'invalid_value')
+    for value in (None, [], {}, (), row[:-1], row + (SUBJECT,), HostileTuple(row)):
+        _reject(lambda: decode(object(), (value,)), 'invalid_shape')
+    for selector in (None, 1, [], {}, HostileStr('custody_receipt')):
+        _reject(lambda: decode(object(), ((selector, *row[1:]),)), 'invalid_shape')
+    for selector in ('', 'socket_custody', 'source_custody', 'unknown', '\u00e9', 'x' * 4096):
+        _reject(lambda: decode(object(), ((selector, None, None, None, None),)), 'invalid_value')
+    for selector, factory in cases:
+        valid = (selector, *_custody_args())
+        for slot in (1, 2, 3, 4):
+            for value, code in (([], 'invalid_shape'), (1, 'invalid_shape'),
+                                (HostileStr(SUBJECT), 'invalid_shape'), ('', 'invalid_value'),
+                                ('RAW_SENTINEL', 'invalid_value')):
+                changed = list(valid); changed[slot] = value
+                _reject(lambda: decode(object(), (tuple(changed),)), code)
+            if slot != 2:
+                changed = list(valid); changed[slot] = None
+                _reject(lambda: decode(object(), (tuple(changed),)), 'invalid_shape')
+            wrong = list(valid); wrong[slot] = OTHER
+            _reject(lambda: decode(_wire(factory(SUBJECT)) + b'\n', (tuple(wrong),)), 'wrong_subject')
+        for ids in (('', [], None, None), (CUST_OWNER, [], '', None),
+                    (CUST_OWNER, [], CUST_GRAPH, '')):
+            _reject(lambda: decode(object(), ((selector, *ids),)), 'invalid_value')
+        _reject(lambda: decode(object(), ((selector, CUST_OWNER, [], CUST_GRAPH, CUST_RECEIPT),)),
+                'invalid_shape')
+    _reject(lambda: decode(object(), (('custody_receipt', '', None, None, None), ())), 'invalid_value')
+    _reject(lambda: decode(object(), (row, ())), 'invalid_shape')
+    _reject(lambda: decode(object(), (('unknown', *row[1:]), row)), 'invalid_value')
+    def bomb(*args): raise AssertionError('decoder before count check')
+    try:
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = (bomb,) * 13
+        for selector, _ in cases:
+            owner_row = (selector, CUST_OWNER, None, CUST_GRAPH, CUST_RECEIPT)
+            _reject(lambda: decode(b'', (owner_row,)), 'invalid_result')
+            _reject(lambda: decode(b'{}\n', ()), 'invalid_result')
+            _reject(lambda: decode(b'{}\n', (owner_row, owner_row)), 'invalid_result')
+        _reject(lambda: decode(b'{}\n', (row, ('custody_receipt', '', None, None, None))),
+                'invalid_value')
+    finally:
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = originals
+
+
+def test_public_physical_jsonl_framing_and_bounds():
+    cases = (
+        ('custody_receipt', lambda operation: _custody(operation=operation)),
+        ('descriptor_receipt', _descriptor),
+        ('process_receipt', _process),
+        ('termination_receipt', _termination),
+        ('graph_closure_receipt', _graph_closure),
+        ('recovery_closure_binding', _recovery_binding),
+        ('recovery_lifecycle', _recovery_lifecycle),
+        ('recovery_prepared_receipt', _recovery_prepared),
+        ('recovery_activate_receipt', _recovery_activate),
+        ('recovery_challenge_receipt', _recovery_challenge),
+        ('recovery_response_receipt', _recovery_response),
+        ('recovery_refused_receipt', _recovery_refused),
+        ('recovery_fixed_failure_receipt', _recovery_fixed_failure),
+    )
+    originals = (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record)
+    decode = codec.decode_public_physical_jsonl
+    calls = []
+    def spy(selector, decoder):
+        def invoke(frame, *ids):
+            calls.append((selector, frame, ids))
+            return decoder(frame, *ids)
+        return invoke
+    class HostileBytes(bytes):
+        def __len__(self): raise AssertionError('length hook')
+        def isascii(self): raise AssertionError('ASCII hook')
+    try:
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = tuple(spy(name, decoder) for (name, _), decoder in zip(cases, originals))
+        for selector, factory in cases:
+            row = (selector, *_custody_args()); line = _wire(factory(SUBJECT)); valid = line + b'\n'
+            for frame in (None, '', bytearray(valid), memoryview(valid), HostileBytes(valid)):
+                calls.clear(); _reject(lambda: decode(frame, (row,)), 'invalid_shape'); assert calls == []
+            for frame, rows in ((line, (row,)), (b'\xef\xbb\xbf' + valid, (row,)),
+                                (b'\xff\n', (row,)), (line + b'\r\n', (row,)),
+                                (b'\r' + valid, (row,)), (b'\n', (row,)),
+                                (valid + b'\n', (row,)), (b'\n' + valid, (row, row)),
+                                (b'\n' * 1076, ()), (b'x' * 3145729, ()),
+                                (b'x' * 3073 + b'\n' + valid, (row, row)),
+                                (valid + b'x' * 3073 + b'\n', (row, row))):
+                calls.clear(); _reject(lambda: decode(frame, rows), 'invalid_encoding'); assert calls == []
+            for size in (2048, 2049, 3072):
+                calls.clear(); frame = b'x' * size + b'\n'
+                _reject(lambda: decode(frame, (row,)), 'invalid_encoding')
+                assert calls == [(selector, frame[:-1], row[1:])]
+            for frame in (b' ' + valid, line + b' \n', b'\v' + valid):
+                calls.clear(); _reject(lambda: decode(frame, (row,)), 'invalid_encoding')
+                assert calls == [(selector, frame[:-1], row[1:])]
+            escaped = _wire(dict(factory(SUBJECT), kind=factory(SUBJECT)['kind'] + '\n')) + b'\n'
+            calls.clear(); _reject(lambda: decode(escaped, (row,)), 'invalid_value')
+            assert calls == [(selector, escaped[:-1], row[1:])]
+            raw_newline = escaped.replace(b'\\n', b'\n')
+            calls.clear(); _reject(lambda: decode(raw_newline, (row,)), 'invalid_result'); assert calls == []
+        boundary = (b'x' * 3072 + b'\n') * 1023 + b'x' * 2048 + b'\n'
+        assert len(boundary) == 3145728 and boundary.count(b'\n') == 1024
+        for selector in ('custody_receipt', 'termination_receipt'):
+            row = (selector, *_custody_args())
+            calls.clear(); _reject(lambda: decode(boundary, (row,) * 1024), 'invalid_encoding')
+            assert calls == [(selector, b'x' * 3072, row[1:])]
+        assert 1075 * 3073 > 3145728
+    finally:
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = originals
+
+
+def test_public_physical_jsonl_delegation_and_precedence():
+    cases = (
+        ('custody_receipt', lambda operation: _custody(operation=operation)),
+        ('descriptor_receipt', _descriptor),
+        ('process_receipt', _process),
+        ('termination_receipt', _termination),
+        ('graph_closure_receipt', _graph_closure),
+        ('recovery_closure_binding', _recovery_binding),
+        ('recovery_lifecycle', _recovery_lifecycle),
+        ('recovery_prepared_receipt', _recovery_prepared),
+        ('recovery_activate_receipt', _recovery_activate),
+        ('recovery_challenge_receipt', _recovery_challenge),
+        ('recovery_response_receipt', _recovery_response),
+        ('recovery_refused_receipt', _recovery_refused),
+        ('recovery_fixed_failure_receipt', _recovery_fixed_failure),
+    )
+    originals = (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record)
+    decode = codec.decode_public_physical_jsonl
+    calls, returned = [], []
+    def spy(selector, decoder):
+        def invoke(frame, *ids):
+            calls.append((selector, frame, ids))
+            result = decoder(frame, *ids)
+            returned.append(result)
+            return result
+        return invoke
+    def no_hash(*args, **kwargs): raise AssertionError('physical framing must not hash')
+    original_hash = codec.hashlib.sha256
+    try:
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = tuple(spy(name, decoder) for (name, _), decoder in zip(cases, originals))
+        codec.hashlib.sha256 = no_hash
+        lines = tuple(_wire(factory(SUBJECT)) for _, factory in cases)
+        rows = tuple((selector, *_custody_args()) for selector, _ in cases)
+        decoded = decode(b''.join(line + b'\n' for line in lines), rows)
+        assert calls == [(row[0], line, row[1:]) for row, line in zip(rows, lines)]
+        assert len(returned) == len(decoded) == 13 and all(a is b for a, b in zip(decoded, returned))
+        assert all(a['payload'] is b['payload'] for a, b in zip(decoded, returned))
+        # A different valid physical variant has the same envelope but the wrong kind.
+        for source, selected in ((0, 1), (1, 0), (4, 5), (5, 4), (10, 11)):
+            calls.clear(); assert len(lines[source]) <= 2048
+            _reject(lambda: decode(lines[source] + b'\n', (rows[selected],)), 'invalid_value')
+            assert calls == [(rows[selected][0], lines[source], rows[selected][1:])]
+        corruptions = []
+        unknown = dict(_custody(), RAW_SENTINEL='RAW_SENTINEL'); corruptions.append((0, unknown, 'invalid_shape'))
+        payload = _descriptor(); payload['payload']['RAW_SENTINEL'] = 'RAW_SENTINEL'
+        corruptions.append((1, payload, 'invalid_shape'))
+        kind = dict(_process(), kind='unknown'); corruptions.append((2, kind, 'invalid_value'))
+        closure = _graph_closure(); closure['payload']['reaped_processes'] = 1
+        corruptions.append((4, closure, 'invalid_result'))
+        binding = _recovery_binding(); binding['payload']['consumer_session_id'] = SUBJECT
+        corruptions.append((5, binding, 'invalid_result'))
+        for index, record, code in corruptions:
+            calls.clear(); bad = _wire(record)
+            error = _reject(lambda: decode(lines[0] + b'\n' + bad + b'\n' + lines[12] + b'\n',
+                                           (rows[0], rows[index], rows[12])), code)
+            assert calls == [(rows[0][0], lines[0], rows[0][1:]), (rows[index][0], bad, rows[index][1:])]
+            assert error.__cause__ is None and error.__context__ is None
+        owner = _graph_closure(None); owner['payload']['scope'] = 'operation_graph'
+        calls.clear(); owner_row = ('graph_closure_receipt', *_graph_closure_args(None))
+        _reject(lambda: decode(_wire(owner) + b'\n', (owner_row,)), 'invalid_result')
+        assert calls == [(owner_row[0], _wire(owner), owner_row[1:])]
+        wrong = (rows[5][0], OTHER, *rows[5][2:])
+        calls.clear(); _reject(lambda: decode(lines[0] + b'\n' + lines[5] + b'\n' + lines[12] + b'\n',
+                                              (rows[0], wrong, rows[12])), 'wrong_subject')
+        assert calls == [(rows[0][0], lines[0], rows[0][1:]), (wrong[0], lines[5], wrong[1:])]
+        for frame in (b'{\n', b' ' + lines[0] + b'\n', lines[0] + b' \n'):
+            calls.clear(); error = _reject(lambda: decode(frame, (rows[0],)), 'invalid_encoding')
+            assert calls == [(rows[0][0], frame[:-1], rows[0][1:])]
+            assert error.__cause__ is None and error.__context__ is None
+        calls.clear(); _reject(lambda: decode(b'{\n' + b'x' * 3073 + b'\n', (rows[0], rows[1])),
+                               'invalid_encoding'); assert calls == []
+        calls.clear(); _reject(lambda: decode(b'{\n', (rows[0], rows[1])), 'invalid_result'); assert calls == []
+    finally:
+        codec.hashlib.sha256 = original_hash
+        (codec.decode_custody_receipt_record, codec.decode_descriptor_receipt_record, codec.decode_process_receipt_record, codec.decode_termination_receipt_record, codec.decode_graph_closure_receipt_record, codec.decode_recovery_closure_binding_record, codec.decode_recovery_lifecycle_record, codec.decode_recovery_prepared_receipt_record, codec.decode_recovery_activate_receipt_record, codec.decode_recovery_challenge_receipt_record, codec.decode_recovery_response_receipt_record, codec.decode_recovery_refused_receipt_record, codec.decode_recovery_fixed_failure_receipt_record) = originals
