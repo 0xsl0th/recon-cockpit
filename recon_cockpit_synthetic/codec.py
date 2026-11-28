@@ -2596,3 +2596,38 @@ def decode_public_bindings_jsonl(frame: bytes, expected_subjects: tuple) -> list
         raise ResultCodecError('invalid_result')
     return [decode_public_binding_record(line, *expected)
             for line, expected in zip(lines, expected_subjects)]
+
+
+def decode_public_observations_jsonl(frame: bytes, expected_subjects: tuple) -> list[dict]:
+    """Parse public observation framing with positional caller-supplied IDs.
+
+    The public3072-byte line cap is separate from the general4096-byte decoder.
+    Grammar proves no common subject, chronology, reference registration,
+    authenticated producer, freshness, provenance, actual TLS/physical closure,
+    recovery eligibility or authority. Empty is not a completed witness. No
+    hashing, manifest linkage, file access, export or acceptance occurs.
+    """
+    byte_cap, record_cap = contract.PUBLIC_MANIFEST_MEMBER_LIMITS['observations.jsonl']
+    if type(expected_subjects) is not tuple:
+        raise ResultCodecError('invalid_shape')
+    if len(expected_subjects) > record_cap:
+        raise ResultCodecError('invalid_value')
+    for expected in expected_subjects:
+        if type(expected) is not tuple or len(expected) != 4:
+            raise ResultCodecError('invalid_shape')
+        _observation_subjects(*expected)
+    if type(frame) is not bytes:
+        raise ResultCodecError('invalid_shape')
+    if len(frame) > byte_cap or not frame.isascii():
+        raise ResultCodecError('invalid_encoding')
+    lines = []
+    if frame:
+        if not frame.endswith(b'\n') or b'\r' in frame or frame.count(b'\n') > record_cap:
+            raise ResultCodecError('invalid_encoding')
+        lines = frame[:-1].split(b'\n')
+        if any(not line or len(line) > 3072 for line in lines):
+            raise ResultCodecError('invalid_encoding')
+    if len(lines) != len(expected_subjects):
+        raise ResultCodecError('invalid_result')
+    return [decode_observation_record(line, *expected)
+            for line, expected in zip(lines, expected_subjects)]
